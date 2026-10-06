@@ -1,0 +1,111 @@
+name: packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional package version; empty builds a development snapshot'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        os: [darwin, linux]
+        arch: [arm64, amd64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+      - name: Build snapshot archive
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: "0"
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          export MCPDECK_VERSION="${REQUESTED_VERSION:-0.1.0-dev.${GITHUB_SHA:0:7}}"
+          sh scripts/package-cli.sh
+          cd dist
+          sha256sum --check *.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcpdeck-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  windows-package:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      # Fixture HOME isolation must not recreate the Go cache per test.
+      - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+      - name: Build Windows archive
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: |
+          $version = $env:REQUESTED_VERSION
+          if (!$version) { $version = '0.1.0-dev.' + $env:GITHUB_SHA.Substring(0, 7) }
+          ./scripts/package-windows.ps1 -Architecture $env:TARGET_ARCH -Version $version
+      - name: Verify native Windows process and clipboard behavior
+        if: matrix.arch == 'amd64'
+        run: go test ./internal/process ./internal/tui
+      - name: Verify native Windows installation and MCP lifecycle
+        if: matrix.arch == 'amd64'
+        run: python tests/windows_smoke.py dist/mcpdeck-windows-amd64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcpdeck-windows-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  sign:
+    needs: [package, windows-package]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mcpdeck-*
+          merge-multiple: true
+          path: dist
+      - name: Sign and verify snapshot manifest
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.MCPDECK_RELEASE_SIGNING_KEY }}
+        run: |
+          set -eu
+          test -n "$RELEASE_SIGNING_KEY"
+          umask 077
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$RELEASE_SIGNING_KEY" > "$key"
+          unset RELEASE_SIGNING_KEY
+          sh scripts/sign-packages.sh dist "$key" --windows
+          sh scripts/verify-packages.sh dist keys/allowed_signers
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcpdeck-signed-snapshots
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14

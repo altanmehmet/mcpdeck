@@ -1,0 +1,85 @@
+name: test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go build -trimpath -o mcpdeck .
+      - run: python3 tests/install_smoke.py ./mcpdeck
+      - run: python3 tests/signatures_smoke.py
+      - run: python3 tests/real_mcp_results_test.py
+      - run: python3 tests/tui_smoke.py ./mcpdeck
+      - run: python3 tests/instructions_smoke.py ./mcpdeck
+      - run: sh scripts/package-cli.sh
+      - run: python3 tests/package_smoke.py dist/mcpdeck-$(go env GOOS)-$(go env GOARCH).tar.gz
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # Fixture tests isolate LOCALAPPDATA; keep the normal runner cache path.
+      - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - run: ./scripts/package-windows.ps1 -Version 0.1.0-windows-ci
+      - run: python tests/windows_smoke.py dist/mcpdeck-windows-amd64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-package
+          path: dist/*
+
+  windows-arm64:
+    runs-on: windows-11-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      # Fixture tests isolate LOCALAPPDATA; keep the normal runner cache path.
+      - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          architecture: arm64
+          cache: true
+      - run: |
+          if ((go env GOARCH) -ne 'arm64') { throw 'Expected a native ARM64 Go toolchain.' }
+          if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64') { throw 'Expected a native ARM64 host.' }
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - run: ./scripts/package-windows.ps1 -Architecture arm64 -Version 0.1.0-windows-ci
+      - run: python tests/windows_smoke.py dist/mcpdeck-windows-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64-native-package
+          path: dist/*

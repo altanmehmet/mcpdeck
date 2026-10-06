@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Bubble Tea 1 / Lip Gloss 1 depend on cellbuf's ANSI 0.10 API.
+    # New ANSI minor versions require a coordinated terminal stack migration.
+    ignore:
+      - dependency-name: github.com/charmbracelet/x/ansi
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
