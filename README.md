@@ -71,6 +71,13 @@ Choose **Instructions** (`g`) to manage shared personal rules. `Ctrl+S` reviews 
 press it again to save and distribute. **Existing** opens current global files;
 **Add one** appends a rule without replacing earlier shared guidance.
 
+Interactive installation and repair use a dedicated terminal conversation: a fixed
+input area, scrollable history, a separate plan view, actual setup step states and
+masked private inputs. Press `F2` to inspect exact commands and sources, `Ctrl+S`
+to continue from chat to approval, and `Ctrl+C` to request cancellation. Use
+`--plain` for the original line-based view; scripts and noninteractive approvals
+retain their existing output. [Console controls](docs/INSTALL-CONSOLE.md).
+
 | Task | Command / key |
 | --- | --- |
 | Open the terminal panel | `mcpdeck` |

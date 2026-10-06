@@ -29,8 +29,8 @@ func repairCommand(get func() store.Store) *cobra.Command {
 	var valuesStdin, wait bool
 	c := &cobra.Command{Use: "repair <mcp-name> [problem description]", Aliases: []string{"update"}, Short: "Diagnose, repair and update an existing MCP with an agent", Args: cobra.RangeArgs(1, 2)}
 	c.RunE = func(c *cobra.Command, args []string) (runErr error) {
-		input := bufio.NewReader(c.InOrStdin())
-		if wait {
+		input := bufio.NewReader(installInput(c))
+		if wait && consoleSessionFor(c) == nil {
 			defer func() {
 				if runErr != nil {
 					fmt.Fprintln(c.OutOrStdout(), "Repair result:", safeText(runErr.Error()))
@@ -120,7 +120,7 @@ func repairCommand(get func() store.Store) *cobra.Command {
 		}
 		if interactive && opts.IsAPI() && os.Getenv(opts.CredentialEnv()) == "" {
 			fmt.Fprint(c.OutOrStdout(), "API key (hidden and not saved; may be empty for local services): ")
-			secret, e := term.ReadPassword(terminalFile.Fd())
+			secret, e := installPassword(c, terminalFile)
 			fmt.Fprintln(c.OutOrStdout())
 			if e != nil {
 				return fmt.Errorf("cannot read API key")
@@ -211,7 +211,7 @@ func repairCommand(get func() store.Store) *cobra.Command {
 				return fmt.Errorf("missing input %s; set its environment variable or supply --values-stdin", key)
 			}
 			fmt.Fprintf(c.OutOrStdout(), "%s (hidden): ", safeText(key))
-			raw, e := term.ReadPassword(file.Fd())
+			raw, e := installPassword(c, file)
 			fmt.Fprintln(c.OutOrStdout())
 			if e != nil {
 				return fmt.Errorf("cannot read input")
@@ -268,6 +268,12 @@ func repairCommand(get func() store.Store) *cobra.Command {
 	c.Flags().StringVar(&approval, "approve", "", "Approve the exact SHA-256 plan digest")
 	c.Flags().BoolVar(&valuesStdin, "values-stdin", false, "Read private inputs as a JSON object from stdin")
 	c.Flags().BoolVar(&wait, "wait", false, "Wait for Enter before returning")
+	var plain bool
+	c.Flags().BoolVar(&plain, "plain", false, "Use the original line-based installation chat")
+	workflow := c.RunE
+	c.RunE = func(c *cobra.Command, args []string) error {
+		return withInstallConsole(c, args, plain || valuesStdin || approval != "", workflow)
+	}
 	_ = c.Flags().MarkHidden("wait")
 	return c
 }

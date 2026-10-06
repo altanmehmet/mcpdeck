@@ -29,8 +29,8 @@ func installCommand(get func() store.Store) *cobra.Command {
 	var planOnly, valuesStdin, all, wait bool
 	c := &cobra.Command{Use: "install [natural-language request]", Short: "Ask an agent to find, install, verify and distribute an MCP", Args: cobra.MaximumNArgs(1)}
 	c.RunE = func(c *cobra.Command, args []string) (runErr error) {
-		input := bufio.NewReader(c.InOrStdin())
-		if wait {
+		input := bufio.NewReader(installInput(c))
+		if wait && consoleSessionFor(c) == nil {
 			defer func() {
 				if runErr != nil {
 					fmt.Fprintln(c.OutOrStdout(), "Installation result:", safeText(runErr.Error()))
@@ -145,7 +145,7 @@ func installCommand(get func() store.Store) *cobra.Command {
 			}
 			if interactive && opts.IsAPI() && os.Getenv(opts.CredentialEnv()) == "" {
 				fmt.Fprintf(c.OutOrStdout(), "API key (hidden and not saved; may be empty for local services): ")
-				secret, e := term.ReadPassword(terminalFile.Fd())
+				secret, e := installPassword(c, terminalFile)
 				fmt.Fprintln(c.OutOrStdout())
 				if e != nil {
 					return fmt.Errorf("cannot read API key")
@@ -277,7 +277,7 @@ func installCommand(get func() store.Store) *cobra.Command {
 				return fmt.Errorf("missing input %s; set its environment variable or supply --values-stdin", key)
 			}
 			fmt.Fprintf(c.OutOrStdout(), "%s (hidden): ", safeText(key))
-			raw, e := term.ReadPassword(file.Fd())
+			raw, e := installPassword(c, file)
 			fmt.Fprintln(c.OutOrStdout())
 			if e != nil {
 				return fmt.Errorf("cannot read input")
@@ -356,6 +356,12 @@ func installCommand(get func() store.Store) *cobra.Command {
 	c.Flags().BoolVar(&valuesStdin, "values-stdin", false, "Read secret input values as a JSON object from stdin; never send them to the planner")
 	c.Flags().BoolVar(&all, "all-profiles", false, "Include configured agents even when their config file does not yet exist")
 	c.Flags().BoolVar(&wait, "wait", false, "Wait for Enter before returning to the terminal panel")
+	var plain bool
+	c.Flags().BoolVar(&plain, "plain", false, "Use the original line-based installation chat")
+	workflow := c.RunE
+	c.RunE = func(c *cobra.Command, args []string) error {
+		return withInstallConsole(c, args, plain || valuesStdin || approval != "" || planOnly, workflow)
+	}
 	_ = c.Flags().MarkHidden("wait")
 	return c
 }
@@ -552,6 +558,10 @@ func safeText(s string) string {
 	}, s)
 }
 func showPlan(w io.Writer, p install.Plan, targets []string) {
+	if presenter, ok := w.(interface{ PresentPlan(install.Plan, []string) }); ok {
+		presenter.PresentPlan(p, targets)
+		return
+	}
 	outputHeading(w, "MCP / "+p.Name)
 	outputParagraph(w, p.Summary)
 	fmt.Fprintf(w, "\nAgents: %s\n", safeText(strings.Join(targets, ", ")))

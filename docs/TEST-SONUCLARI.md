@@ -1,5 +1,24 @@
 # Test sonuçları
 
+## Installation conversation console — 6 October 2026
+
+- Full local Go tests, cmd/TUI race tests and static checks passed.
+- A real Unix PTY verified controlled agent reply/revision/retry, separate exact-plan
+  approval, masked private input, real fixture setup/probe/sync and completion.
+- Narrow repair, empty-approval cancellation, resize, mouse approval and cancellation
+  while planning passed. Private values did not enter terminal output or planner
+  prompts. No real agent account/configuration was changed.
+- The original noninteractive binary install smoke passed; `--plain` preserves the
+  original terminal flow. Secret values and connection fields are omitted from
+  the presentation model.
+- Initial implementation tests exposed nil Cobra contexts, input phase/render timing
+  assumptions and plan view obscuring final errors. These were corrected; failed
+  attempts are not counted as successful.
+- Native Terminal.app GUI observation is unavailable through Computer Use in this
+  environment. The image preview is rendered from the actual view with fixture
+  data; interaction was tested via PTY rather than claimed as native GUI QA.
+
+
 Historical pre-launch CI links refer to the private development archive. Current public
 checks are available at https://github.com/altanmehmet/mcpdeck/actions.
 
