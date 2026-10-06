@@ -35,6 +35,7 @@ jobs:
       - run: python3 tests/real_mcp_results_test.py
       - run: python3 tests/tui_smoke.py ./mcpdeck
       - run: python3 tests/instructions_smoke.py ./mcpdeck
+      - run: python3 tests/install_console_smoke.py ./mcpdeck
       - run: sh scripts/package-cli.sh
       - run: python3 tests/package_smoke.py dist/mcpdeck-$(go env GOOS)-$(go env GOARCH).tar.gz
 
