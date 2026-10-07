@@ -146,6 +146,17 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
         visible("Saved. Start new agent sessions")
         os.write(master, b"\x1b")  # Leave review.
         time.sleep(0.2)  # Let the terminal distinguish Esc from an Alt chord.
+        os.write(master, b"\x01")  # Ctrl+A selects the complete shared draft.
+        visible("All text selected")
+        paste("Replacement draft 日本語 🚀.")
+        visible("Draft changed.")
+        assert source.read_text() == draft, "Select-all replacement wrote before approval"
+        click(35, 5)  # Undo edit.
+        visible("Last text edit undone.")
+        click(20, 5)  # Clear text, then undo through the keyboard.
+        visible("Draft changed.")
+        os.write(master, b"\x1a")
+        visible("Last text edit undone.")
         os.write(master, b"\x0e")  # Ctrl+N adds one shared instruction.
         visible("MCPDECK / ADD ONE SHARED INSTRUCTION")
         paste("Added in terminal.")
@@ -178,6 +189,19 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
         click(20, 3)
         wait(lambda: native.read_text().startswith(prefix))
         visible("Saved. Start new agent sessions")
+        assert all(p.read_bytes() == raw for p, raw in before_native_edit.items())
+        os.write(master, b"\x1b")  # Leave native review.
+        time.sleep(0.2)
+        os.write(master, b"\x01")
+        visible("All text selected")
+        paste("Replaced personal text 日本語.\n")
+        output.clear()
+        os.write(master, b"\x13")
+        visible("Save this file")
+        os.write(master, b"\x13")
+        wait(lambda: native.read_text().startswith("Replaced personal text 日本語."))
+        visible("Saved. Start new agent sessions")
+        assert prefix not in native.read_text() and draft in native.read_text()
         assert all(p.read_bytes() == raw for p, raw in before_native_edit.items())
         shared_before_import = source.read_bytes()
         click(8, 5)  # Use for all loads a draft, without distributing it.
