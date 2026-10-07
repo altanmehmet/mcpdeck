@@ -187,3 +187,109 @@ func TestExistingNativeEditAndUseForAll(t *testing.T) {
 		t.Fatal("imported instructions were not distributed")
 	}
 }
+
+func TestSharedSelectionReplacementUndoAndReviewedClear(t *testing.T) {
+	m := instructionFixture(t)
+	manager := instructions.New(m.store)
+	doc, err := manager.SelectDocument(m.deck, "codex", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := manager.ReadDocument(m.deck, doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AtomicWrite(doc.Path, []byte("Keep personal guidance.\n"+raw)); err != nil {
+		t.Fatal(err)
+	}
+	send := func(k tea.KeyMsg) tea.Cmd { next, command := m.Update(k); m = next.(Model); return command }
+	send(tea.KeyMsg{Type: tea.KeyCtrlA})
+	send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Yeni talimat 日本語 🚀.")})
+	if string(m.instructionEditor.text) != "Yeni talimat 日本語 🚀." {
+		t.Fatal("selection appended instead of replacing")
+	}
+	send(tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if string(m.instructionEditor.text) != "Initial shared guidance." {
+		t.Fatal("replacement could not be undone")
+	}
+	send(tea.KeyMsg{Type: tea.KeyCtrlA})
+	send(tea.KeyMsg{Type: tea.KeyBackspace})
+	if len(m.instructionEditor.text) != 0 {
+		t.Fatal("select-all delete did not clear")
+	}
+	if current, _ := manager.Load(); current != "Initial shared guidance." {
+		t.Fatal("clear wrote before review")
+	}
+	if command := send(tea.KeyMsg{Type: tea.KeyCtrlS}); command != nil || !strings.Contains(m.instructionEditor.message, "REMOVE") {
+		t.Fatal("removal was not explicitly reviewed")
+	}
+	send(tea.KeyMsg{Type: tea.KeyCtrlU})
+	if !m.instructionEditor.review {
+		t.Fatal("clear escaped the review gate")
+	}
+	command := send(tea.KeyMsg{Type: tea.KeyCtrlS})
+	if command == nil {
+		t.Fatal("missing reviewed clear")
+	}
+	next, _ := m.Update(command())
+	m = next.(Model)
+	if current, _ := manager.Load(); current != "" {
+		t.Fatal("shared guidance not cleared")
+	}
+	current, err := manager.ReadDocument(m.deck, doc)
+	if err != nil || !strings.Contains(current, "Keep personal guidance.") || strings.Contains(current, "mcpdeck:global-instructions") {
+		t.Fatal("clear damaged personal guidance", err)
+	}
+}
+
+func TestNativeSelectAllReplacementPreservesSharedAndUndoScope(t *testing.T) {
+	m := instructionFixture(t)
+	manager := instructions.New(m.store)
+	doc, err := manager.SelectDocument(m.deck, "codex", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := manager.ReadDocument(m.deck, doc)
+	if err := store.AtomicWrite(doc.Path, []byte("Old personal guidance.\n"+raw)); err != nil {
+		t.Fatal(err)
+	}
+	m, err = NewAgentInstructions(m.deck, m.store, "codex", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	send := func(k tea.KeyMsg) tea.Cmd { next, command := m.Update(k); m = next.(Model); return command }
+	send(tea.KeyMsg{Type: tea.KeyCtrlA})
+	send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("New personal guidance.")})
+	if strings.Contains(string(m.instructionEditor.text), "Old personal") || !strings.Contains(string(m.instructionEditor.text), raw) {
+		t.Fatal("native replacement lost the protected block")
+	}
+	send(tea.KeyMsg{Type: tea.KeyCtrlU})
+	if strings.Contains(string(m.instructionEditor.text), "New personal") || !strings.Contains(string(m.instructionEditor.text), raw) {
+		t.Fatal("native clear damaged shared guidance")
+	}
+	send(tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if !strings.Contains(string(m.instructionEditor.text), "New personal") {
+		t.Fatal("native clear could not be undone")
+	}
+	if command := send(tea.KeyMsg{Type: tea.KeyCtrlS}); command != nil || !m.instructionEditor.review {
+		t.Fatal("native replacement did not pass protected-block validation")
+	}
+	command := send(tea.KeyMsg{Type: tea.KeyCtrlS})
+	if command == nil {
+		t.Fatal("native replacement could not be saved")
+	}
+	next, _ := m.Update(command())
+	m = next.(Model)
+	current, err := manager.ReadDocument(m.deck, doc)
+	if err != nil || !strings.Contains(current, "New personal") || !strings.Contains(current, raw) {
+		t.Fatal("native save lost content", err)
+	}
+	if central, _ := manager.Load(); central != "Initial shared guidance." {
+		t.Fatal("native edit changed all agents")
+	}
+	send(tea.KeyMsg{Type: tea.KeyCtrlG})
+	send(tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if string(m.instructionEditor.text) != "Initial shared guidance." {
+		t.Fatal("undo crossed editor scope")
+	}
+}

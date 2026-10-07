@@ -172,3 +172,21 @@ Dosya dağıtımı, mevcut metnin korunması, proje dosyalarına dokunulmaması,
 güncelleme/kaldırma, paylaşılan hedefler, sınırlı boyut, symlink ve eşzamanlı editör
 kontrolleri yerel fixture testleriyle doğrulanır. Gerçek ajan sürümlerinin bu
 dosyaları yüklemesi ayrıca ajan içinde kontrol edilmelidir.
+
+## Düzenleme ve temizleme
+
+- Ortak editör **mevcut merkezi metni** açar. Kaydetmek, ajan dosyalarında yalnız
+  MCPDeck bloğunu değiştirir. Blok ilk kez dosyanın sonuna eklenir; sonraki
+  güncellemeler aynı bloğun yerinde yapılır. Diğer kişisel metin korunur.
+- **Add one** mevcut ortak metnin sonuna ekler.
+- **Ctrl+A / Select all**: bütün taslağı seç. Yazmak/yapıştırmak seçimi değiştirir;
+  Backspace veya Delete temizler. Ok tuşları veya Esc seçimi iptal eder.
+- **Ctrl+U / Clear text**: taslağı temizle. **Ctrl+Z / Undo edit** son metin
+  değişikliğini bir kez geri alır. Bunlar dosyaya hemen yazmaz.
+- **Ctrl+S** önce inceleme, ikinci basış kayıt. İnceleme ekranında **Edit / Esc**
+  ile düzenlemeye dönülür. Boş ortak metni onaylamak tüm yapılandırılmış hedeflerde
+  yalnız MCPDeck bloklarını kaldırır; diğer talimatları silmez.
+- **Existing** ile bir ajan dosyasını açınca değişiklik yalnız o dosyaya gider
+  (aynı dosyayı kullanan ajanlar da görür). Tümünü değiştirme/temizleme ortak
+  MCPDeck bloğunu korur. **Use for all** ise metni ortak editöre bir taslak olarak
+  taşır; bütün ajanlara dağıtım için ayrıca inceleme ve kayıt gerekir.

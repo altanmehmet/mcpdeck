@@ -118,3 +118,40 @@ func TestModularPersonalRulesAreVisible(t *testing.T) {
 		}
 	}
 }
+
+func TestReplacePersonalTextKeepsExactManagedBlock(t *testing.T) {
+	block := begin + "\nShared 日本語.\n" + end
+	current := "Before.\n" + block + "\nAfter."
+	for _, replacement := range []string{"", "New personal 🚀."} {
+		updated, err := ReplacePersonalText(current, replacement)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := managedBlock(updated)
+		if err != nil || got != block || strings.Contains(updated, "Before.") || strings.Contains(updated, "After.") {
+			t.Fatal("personal replacement changed shared block", err)
+		}
+	}
+	if _, err := ReplacePersonalText(begin+"\nBroken", "New"); err == nil {
+		t.Fatal("malformed block accepted")
+	}
+	if _, err := ReplacePersonalText(current, block); err == nil {
+		t.Fatal("replacement accepted managed markers")
+	}
+	if text, err := ReplacePersonalText("Unmanaged", ""); err != nil || text != "" {
+		t.Fatal("unmanaged file could not be cleared", err)
+	}
+}
+
+func TestReplacePersonalTextPreservesRuleActivationMetadata(t *testing.T) {
+	header := "---\nalwaysApply: true\ndescription: Existing rule\n---\n"
+	block := begin + "\nShared.\n" + end
+	for _, suffix := range []string{"", "\n" + block + "\n"} {
+		for _, replacement := range []string{"", "New instructions."} {
+			updated, err := ReplacePersonalText(header+"Old instructions."+suffix, replacement)
+			if err != nil || !strings.HasPrefix(updated, header) || strings.Contains(updated, "Old instructions.") {
+				t.Fatal("replacement removed rule metadata", err)
+			}
+		}
+	}
+}

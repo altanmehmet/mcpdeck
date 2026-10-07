@@ -199,6 +199,32 @@ func managedBlock(text string) (string, error) {
 	return text[start : finish+len(end)], nil
 }
 
+// ReplacePersonalText replaces a document's personal text while retaining the
+// exact managed shared block. The normal document checks still run on save.
+func ReplacePersonalText(current, replacement string) (string, error) {
+	block, err := managedBlock(current)
+	if err != nil {
+		return "", err
+	}
+	if strings.Contains(replacement, begin) || strings.Contains(replacement, end) {
+		return "", fmt.Errorf("edit shared instructions in the central editor; replacement personal text cannot contain managed markers")
+	}
+	// Rule-file front matter controls activation, rather than instruction text.
+	// Keep it when clearing or replacing the visible document in one operation.
+	if strings.HasPrefix(current, "---\n") {
+		if finish := strings.Index(current[4:], "\n---\n"); finish >= 0 {
+			replacement = current[:4+finish+5] + replacement
+		}
+	}
+	if block == "" {
+		return replacement, nil
+	}
+	if replacement != "" && !strings.HasSuffix(replacement, "\n\n") {
+		replacement += "\n\n"
+	}
+	return replacement + block + "\n", nil
+}
+
 // SaveDocument edits an existing agent's personal text. Shared instructions
 // remain owned by the central editor and cannot silently drift in one agent.
 func (m Manager) SaveDocument(d *model.Deck, doc Document, text, expected string) error {

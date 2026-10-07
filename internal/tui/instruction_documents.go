@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/altanmehmet/mcpdeck/internal/instructions"
 	"github.com/altanmehmet/mcpdeck/internal/model"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func NewAgentInstructions(d *model.Deck, s store.Store, agent, path string) (Model, error) {
@@ -26,6 +26,7 @@ func NewAgentInstructions(d *model.Deck, s store.Store, agent, path string) (Mod
 		return m, fmt.Errorf("cannot open shared instruction editor: %s", m.status)
 	}
 	f := m.instructionEditor
+	f.resetEditing()
 	f.sharedDraft = append([]rune(nil), f.text...)
 	f.document = &doc
 	f.documentOriginal = text
@@ -39,6 +40,7 @@ func (m *Model) restoreSharedInstructions() {
 	if f.document != nil || f.adding || f.picking {
 		f.text = append([]rune(nil), f.sharedDraft...)
 	}
+	f.resetEditing()
 	f.document = nil
 	f.adding = false
 	f.picking = false
@@ -57,6 +59,7 @@ func (m Model) pickInstructionDocuments() (tea.Model, tea.Cmd) {
 	if f.document == nil && !f.adding {
 		f.sharedDraft = append([]rune(nil), f.text...)
 	}
+	f.resetEditing()
 	f.documents = documents
 	f.picking = true
 	f.review = false
@@ -110,6 +113,7 @@ func (m Model) updateInstructionDocuments(msg tea.Msg) (tea.Model, tea.Cmd) {
 			f.message = err.Error()
 			return m, nil
 		}
+		f.resetEditing()
 		f.document = &doc
 		f.documentOriginal = text
 		f.text = []rune(text)
