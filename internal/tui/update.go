@@ -51,6 +51,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.keyEditor != nil {
 		return m.updateKeys(msg)
 	}
+	if m.actionsOpen {
+		return m.updateActions(msg)
+	}
 	if mouse, ok := msg.(tea.MouseMsg); ok {
 		return m.mouse(mouse)
 	}
@@ -83,6 +86,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch action := m.boundAction(key.String()); action {
+		case "actions":
+			m.actionsOpen = true
 		case "remove":
 			if len(m.servers) > 0 {
 				m.removing = m.servers[m.cursor]
@@ -291,7 +296,7 @@ func (m Model) mouse(event tea.MouseMsg) (tea.Model, tea.Cmd) {
 	}
 	for _, button := range m.buttons() {
 		if event.Y == button.y && event.X >= button.x && event.X < button.x+button.w && event.X < m.width {
-			actions := map[string]string{"Install MCP": "install", "Install": "install", "Repair": "repair", "+ New MCP": "add", "Instructions": "instructions", "Refresh": "reload", "Sync": "sync", "Retry": "retry_sync", "Help": "help", "Exit": "quit", "Toggle": "toggle", "Enable all": "enable_all", "Disable all": "disable_all", "All on": "enable_all", "All off": "disable_all", "Mode": "mode", "Remove": "remove"}
+			actions := map[string]string{"More": "actions", "Install MCP": "install", "Install": "install", "Repair": "repair", "+ New MCP": "add", "Instructions": "instructions", "Refresh": "reload", "Sync": "sync", "Retry": "retry_sync", "Help": "help", "Exit": "quit", "Toggle": "toggle", "Enable all": "enable_all", "Disable all": "disable_all", "All on": "enable_all", "All off": "disable_all", "Mode": "mode", "Remove": "remove"}
 			if id := actions[button.action]; id != "" {
 				return m.Update(keyMessage(m.keys.Bindings[id]))
 			}

@@ -27,7 +27,7 @@ func installCommand(get func() store.Store) *cobra.Command {
 	var provider, plannerModel, baseURL, keyEnv, serverName string
 	var docsPath string
 	var planOnly, valuesStdin, all, wait bool
-	c := &cobra.Command{Use: "install [natural-language request]", Short: "Ask an agent to find, install, verify and distribute an MCP", Args: cobra.MaximumNArgs(1)}
+	c := &cobra.Command{Use: "install [natural-language request]", Aliases: []string{"connect"}, Short: "Ask an agent to find, install, verify and distribute an MCP", Args: cobra.MaximumNArgs(1)}
 	c.RunE = func(c *cobra.Command, args []string) (runErr error) {
 		input := bufio.NewReader(installInput(c))
 		if wait && consoleSessionFor(c) == nil {

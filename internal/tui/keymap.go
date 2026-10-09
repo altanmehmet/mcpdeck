@@ -21,6 +21,7 @@ type keyBinding struct {
 var keyBindings = []keyBinding{
 	{"quit", "Exit", "q"},
 	{"help", "Help", "?"},
+	{"actions", "More actions", "m"},
 	{"assign_keys", "Assign keys", "a"},
 	{"install", "Install MCP", "i"},
 	{"repair", "Repair/update selected MCP", "u"},
@@ -187,7 +188,7 @@ func validKey(key string) bool {
 		return false
 	}
 	switch key {
-	case "tab", "enter", "space", "up", "down", "left", "right", "backspace", "delete", "home", "end", "pgup", "pgdown", "ctrl+a", "ctrl+b", "ctrl+d", "ctrl+e", "ctrl+f", "ctrl+g", "ctrl+h", "ctrl+i", "ctrl+j", "ctrl+k", "ctrl+l", "ctrl+m", "ctrl+n", "ctrl+o", "ctrl+p", "ctrl+q", "ctrl+s", "ctrl+t", "ctrl+u", "ctrl+v", "ctrl+w", "ctrl+x", "ctrl+y", "ctrl+z":
+	case "tab", "enter", "space", "up", "down", "left", "right", "backspace", "delete", "home", "end", "pgup", "pgdown", "ctrl+a", "ctrl+b", "ctrl+d", "ctrl+e", "ctrl+f", "ctrl+g", "ctrl+h", "ctrl+i", "ctrl+j", "ctrl+k", "ctrl+l", "ctrl+m", "ctrl+n", "ctrl+o", "ctrl+p", "ctrl+q", "ctrl+r", "ctrl+s", "ctrl+t", "ctrl+u", "ctrl+v", "ctrl+w", "ctrl+x", "ctrl+y", "ctrl+z":
 		return true
 	}
 	return len([]rune(key)) == 1 && key != " " && !strings.ContainsAny(key, "\x00\n\r")

@@ -67,6 +67,17 @@ Bir ajanın birden fazla genel kural dosyası varsa `instructions files` listesi
 yolu `--agent cursor --path /tam/genel/kural/dosyası.mdc` ile seçebilirsiniz.
 Proje veya listede olmayan rastgele bir dosya bu yolla düzenlenemez.
 
+Ana dosya yoksa veya boşsa ve tek bir dolu genel kural dosyası varsa
+`show --agent` ve ajan editörü bu mevcut dosyayı açar. Birden fazla dolu dosya
+varsa `--path` ile seçim gerekir. Dolu ana dosyanın önceliği korunur.
+Copilot'un modüler dizininde yalnız `.instructions.md` dosyaları listelenir;
+sıradan Markdown notları Copilot talimatı sayılmaz.
+
+Editörde `Ctrl+R`, seçili dosyanın disk üzerindeki güncel içeriğini yeniden okur.
+Kaydedilmemiş düzenleme varsa taslağı silmez; önce kaydedin veya editörü kapatıp
+yeniden açın. `instructions status --agent copilot-cli`, yalnız bu ajanın ortak
+talimat dağıtım durumunu gösterir; modüler dosyaların birleşik içeriği değildir.
+
 `set` merkezdeki metni değiştirir ve algılanan ajanlara dağıtır. Dosyanın veya stdin
 girdisinin içeriği düz UTF-8 metindir (`--file -` stdin okur). Üst sınır 24 KiB'dir.
 Metin bir planlayıcıya/API'ye gönderilmez. Merkez kayıt, `deck.json` yanında
@@ -172,3 +183,46 @@ Dosya dağıtımı, mevcut metnin korunması, proje dosyalarına dokunulmaması,
 güncelleme/kaldırma, paylaşılan hedefler, sınırlı boyut, symlink ve eşzamanlı editör
 kontrolleri yerel fixture testleriyle doğrulanır. Gerçek ajan sürümlerinin bu
 dosyaları yüklemesi ayrıca ajan içinde kontrol edilmelidir.
+
+## Düzenleme ve temizleme
+
+- Ortak editör **mevcut merkezi metni** açar. Kaydetmek, ajan dosyalarında yalnız
+  MCPDeck bloğunu değiştirir. Blok ilk kez dosyanın sonuna eklenir; sonraki
+  güncellemeler aynı bloğun yerinde yapılır. Diğer kişisel metin korunur.
+- **Add one** mevcut ortak metnin sonuna ekler.
+- **Ctrl+A / Select all**: bütün taslağı seç. Yazmak/yapıştırmak seçimi değiştirir;
+  Backspace veya Delete temizler. Ok tuşları veya Esc seçimi iptal eder.
+- **Ctrl+U / Clear text**: taslağı temizle. **Ctrl+Z / Undo edit** son metin
+  değişikliğini bir kez geri alır. Bunlar dosyaya hemen yazmaz.
+- **Ctrl+S** önce inceleme, ikinci basış kayıt. İnceleme ekranında **Edit / Esc**
+  ile düzenlemeye dönülür. Boş ortak metni onaylamak tüm yapılandırılmış hedeflerde
+  yalnız MCPDeck bloklarını kaldırır; diğer talimatları silmez.
+- **Existing** ile bir ajan dosyasını açınca değişiklik yalnız o dosyaya gider
+  (aynı dosyayı kullanan ajanlar da görür). Tümünü değiştirme/temizleme ortak
+  MCPDeck bloğunu korur. **Use for all** ise metni ortak editöre bir taslak olarak
+  taşır; bütün ajanlara dağıtım için ayrıca inceleme ve kayıt gerekir.
+
+## Masaüstünde ajan dosyalarını görmek
+
+Instructions ekranındaki Agent seçicisinden ajanı seçin. Instruction file listesi
+aynı fiziksel dosyayı bir kez gösterir ve onu kullanan bütün ajanları isimlendirir.
+Gemini CLI / Antigravity'nin `~/.gemini/GEMINI.md` dosyası ortaktır. Copilot CLI ile
+VS Code Copilot Agent Host varsayılan `~/.copilot/copilot-instructions.md` dosyasını
+paylaşır; özel COPILOT_HOME kullanılırsa yollar farklı kalabilir. VS Code Local
+kullanıcı profili dosyaları ayrı kaynaklardır; marka benzerliği nedeniyle birleştirilmez.
+
+Dosya yoksa **not created**, mevcut ama boşsa **empty**, metin varsa **saved**
+görünür. Dosyanın bulunmaması okuma hatası sayılmaz; olmayan dosyalar görüntüleme
+sırasında otomatik oluşturulmaz. Reload sources ile dışarıdan eklenen dosyaları yeniden
+keşfedin. Düzenlemeden önce paylaşılan dosyanın etkilediği ajanları inceleyin.
+
+Antigravity'nin belgelenmiş global AGENTS/GEMINI alternatifleri ve düz global rules
+klasörleri de taranır. Gemini CLI'nin settings.json içindeki context.fileName ayarında
+belirtilen global Markdown dosyaları gösterilir. VS Code'un global kullanıcı
+prompts/profiles depolarındaki .instructions.md dosyaları gösterilir. Bu envanter
+proje klasörlerinin talimatlarını veya bütün bir model oturumunun birleşik bağlamını
+çıkarmaya çalışmaz; mevcut ortak dağıtım hedefleri değiştirilmez.
+
+Kaynaklar: [Gemini context](https://geminicli.com/docs/cli/gemini-md/),
+[Antigravity global rules](https://antigravity.google/docs/rules/),
+[VS Code instruction scopes](https://code.visualstudio.com/docs/agent-customization/custom-instructions).

@@ -28,17 +28,21 @@ func (m Model) listWidth() int {
 func (m Model) buttons() []hit {
 	result := []hit{}
 	x := 1
-	for _, a := range []string{"+ New MCP", "Instructions", "Refresh", "Sync", "Help", "Exit", "Remove", "Retry"} {
-		result = append(result, hit{x, 2, len(a) + 4, a, 0})
+	for _, a := range []string{"+ New MCP", "Instructions", "Sync", "Help", "Exit"} {
+		if x+len(a)+4 <= m.width {
+			result = append(result, hit{x, 2, len(a) + 4, a, 0})
+		}
 		x += len(a) + 5
 	}
 	x = 1
-	controls := []string{"Toggle", "Enable all", "Disable all", "Mode", "Install MCP", "Repair"}
+	controls := []string{"Toggle", "Enable all", "Disable all", "More"}
 	if m.width < 76 {
-		controls = []string{"Toggle", "All on", "All off", "Mode", "Install", "Repair"}
+		controls = []string{"Toggle", "All on", "All off", "More"}
 	}
 	for _, a := range controls {
-		result = append(result, hit{x, 3, len(a) + 4, a, 0})
+		if x+len(a)+4 <= m.width {
+			result = append(result, hit{x, 3, len(a) + 4, a, 0})
+		}
 		x += len(a) + 5
 	}
 	return result
@@ -70,6 +74,9 @@ func (m Model) View() string {
 	}
 	if m.keyEditor != nil {
 		return m.keyEditorView()
+	}
+	if m.actionsOpen {
+		return m.actionsView()
 	}
 	if m.help {
 		return m.helpView()
@@ -173,7 +180,7 @@ func (m Model) View() string {
 		lines[m.height-3] = " Working..."
 	}
 	lines[m.height-2] = muted.Render(fmt.Sprintf(" %s: agents  %s/%s: servers  %s: toggle  %s/%s: all", displayKey(m.keys.Bindings["switch_profile"]), displayKey(m.keys.Bindings["move_up"]), displayKey(m.keys.Bindings["move_down"]), displayKey(m.keys.Bindings["toggle"]), displayKey(m.keys.Bindings["enable_all"]), displayKey(m.keys.Bindings["disable_all"])))
-	lines[m.height-1] = muted.Render(fmt.Sprintf(" %s: new MCP  %s: instructions  %s: repair  %s: refresh  %s: sync  %s: help  %s: quit", displayKey(m.keys.Bindings["add"]), displayKey(m.keys.Bindings["instructions"]), displayKey(m.keys.Bindings["repair"]), displayKey(m.keys.Bindings["reload"]), displayKey(m.keys.Bindings["sync"]), displayKey(m.keys.Bindings["help"]), displayKey(m.keys.Bindings["quit"])))
+	lines[m.height-1] = muted.Render(fmt.Sprintf(" %s: new MCP  %s: more  %s: help  %s: quit", displayKey(m.keys.Bindings["add"]), displayKey(m.keys.Bindings["actions"]), displayKey(m.keys.Bindings["help"]), displayKey(m.keys.Bindings["quit"])))
 	for i, line := range lines {
 		lines[i] = ansi.Truncate(line, m.width, "")
 	}

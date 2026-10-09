@@ -6,11 +6,11 @@ import (
 	"os"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/spf13/cobra"
 	"github.com/altanmehmet/mcpdeck/internal/instructions"
 	"github.com/altanmehmet/mcpdeck/internal/store"
 	"github.com/altanmehmet/mcpdeck/internal/tui"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
 )
 
 func instructionsCommand(get func() store.Store) *cobra.Command {
@@ -86,6 +86,18 @@ func instructionsCommand(get func() store.Store) *cobra.Command {
 		}
 		results, err := instructions.New(get()).Status(d, all)
 		if err == nil {
+			if agent != "" {
+				filtered := results[:0]
+				for _, result := range results {
+					if result.Agent == agent {
+						filtered = append(filtered, result)
+					}
+				}
+				if len(filtered) == 0 {
+					return fmt.Errorf("unknown agent: %s", safeText(agent))
+				}
+				results = filtered
+			}
 			showInstructionResults(c, results)
 		}
 		return err

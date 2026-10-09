@@ -14,11 +14,15 @@ import (
 	"time"
 )
 
-type Store struct{ Path string }
+type Store struct {
+	Path string
+	// DisableDiscovery keeps isolated desktop demos inside their explicit profiles.
+	DisableDiscovery bool
+}
 
 func Default() Store {
 	home, _ := os.UserHomeDir()
-	return Store{filepath.Join(home, ".config", "mcpdeck", "deck.json")}
+	return Store{Path: filepath.Join(home, ".config", "mcpdeck", "deck.json")}
 }
 func Load() (*model.Deck, error) { return Default().Load() }
 func Save(d *model.Deck) error   { return Default().Save(d) }
@@ -250,7 +254,9 @@ func (s Store) Load() (*model.Deck, error) {
 	b, err := os.ReadFile(s.Path)
 	if errors.Is(err, os.ErrNotExist) {
 		d := Defaults()
-		discoverInstalledProfiles(d)
+		if !s.DisableDiscovery {
+			discoverInstalledProfiles(d)
+		}
 		return d, nil
 	}
 	if err != nil {
@@ -263,7 +269,9 @@ func (s Store) Load() (*model.Deck, error) {
 	if err = json.Unmarshal(b, &d); err != nil {
 		return nil, fmt.Errorf("invalid deck JSON: %w", err)
 	}
-	discoverInstalledProfiles(&d)
+	if !s.DisableDiscovery {
+		discoverInstalledProfiles(&d)
+	}
 	if err = d.Validate(); err != nil {
 		return nil, err
 	}

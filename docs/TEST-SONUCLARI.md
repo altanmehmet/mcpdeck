@@ -1,5 +1,185 @@
 # Test sonuçları
 
+## Gerçek ajan doğrulaması — 9 Ekim 2026
+
+Bu çalıştırmada projedeki `./mcpdeck` binary'si kullanıldı. Gerçek ajan testleri
+mevcut hesaplarla özel geçici kullanıcı dizinlerinde çalıştı; asıl ajan ayarları,
+kişisel talimatlar ve proje talimatları değiştirilmedi. Kimlik bilgileri ve model
+yanıtları rapora yazılmadı.
+
+| Kontrol | Sonuç | Doğrulanan davranış |
+| --- | --- | --- |
+| Codex genel talimat | GEÇTİ | Üç yeni oturumda eklenen/güncellenen rastgele değeri okudu; silme sonrası ABSENT döndü. Değer sorunun içinde verilmedi. |
+| Copilot CLI genel talimat | GEÇTİ | Aynı ekleme, güncelleme ve silme senaryosu gerçek oturumlarla geçti. |
+| Codex MCP | GEÇTİ | İki gerçek araç çağrısı sunucu kaydıyla doğrulandı; enable/disable/remove istemci listesinde kontrol edildi. |
+| Copilot CLI MCP | GEÇTİ | Aynı araç çağrısı ve bağlantı yaşam döngüsü senaryosu geçti. |
+| Gerçek istemci yapılandırma okuyucuları | GEÇTİ | Codex/Copilot CLI, MCPDeck'in yazdığı ekleme, kapatma, açma ve kaldırmayı okudu. |
+| Genel talimat dağıtımı | GEÇTİ | 13 otomatik profil, 11 ortak dosya yolu; Unicode, mevcut metin koruma, güncelleme, append, retry, clear ve doğrulama. |
+| Terminal etkileşimi | GEÇTİ | Gerçek PTY'de fare/klavye inceleme-kayıt, mevcut dosya düzenleme, ortak taslak/iptal ve clipboard çıktısı. |
+| Tüm Go paketleri | GEÇTİ | `go test ./...`; bazı sonuçlar Go test önbelleğinden geldi. |
+| Oracle/Sentry Bridge | GEÇTİ | Initialize/tools-list ile 13 gerçek araç; Oracle list-connections ve Sentry whoami çağrıları. |
+| Oracle SQL sorgusu | TEST EDİLMEDİ | Bu çalıştırmada bağlantı seçilmedi ve SQL çalıştırılmadı. |
+
+Genel talimat fixture kapsamı: Codex, Claude Code, Copilot CLI, Copilot Agent Host
+dosyası, Gemini CLI, Antigravity, Qwen Code, OpenCode, Cursor, Windsurf, Kiro, Cline
+CLI ve Cline VS Code dosyası. Bu sonuç dosya yönetimini doğrular; ilgili uygulamanın
+dosyayı gerçekten yüklediği anlamına gelmez. MCP biçim testleri Direct/Bridge
+geçişinde mevcut ayar ve harici sunucu korumasını da doğrular.
+
+Claude, Gemini, Qwen, OpenCode, Cline ve Kiro CLI komutları PATH'te bulunamadı.
+Cursor, Windsurf, Antigravity, Visual Studio Code, Claude, Kiro ve Zed uygulamaları
+/Applications veya ~/Applications altında bulunamadı. Bu istemcilerin gerçek
+oturumda talimat yüklemesi ve MCP çağrısı **TEST EDİLMEDİ**. Başka bir konuma kurulu
+olmadıkları sonucuna varılmadı. Otomatik genel talimat adaptörü bulunmayan ajanların
+`manual` sonucu, otomatik genel talimat desteği olarak sayılmamalıdır.
+
+Tekrar çalıştırma (gerçek oturumlar sağlayıcı hesabı kullanımı tüketir):
+
+```sh
+go test ./...
+python3 tests/instructions_smoke.py ./mcpdeck
+python3 tests/client_config_smoke.py ./mcpdeck
+python3 tests/live_instructions_smoke.py ./mcpdeck codex
+python3 tests/live_instructions_smoke.py ./mcpdeck copilot
+python3 tests/live_agent_smoke.py ./mcpdeck codex
+python3 tests/live_agent_smoke.py ./mcpdeck copilot
+python3 tests/real_mcp_smoke.py ./mcpdeck
+```
+
+Son komut mevcut Oracle ve Copilot CLI Sentry yapılandırmasına bağlıdır; diğer
+testler geçici deck/ayar dosyaları kullanır. Bu çalıştırmada tüm komutlar sıfır
+çıkış koduyla tamamlandı. Sonuçlar bu Mac ve kurulu istemci sürümleri içindir;
+Windows istemci davranışı veya tüm olası MCP sunucuları için garanti değildir.
+
+## General-only scope correction — 9 October 2026
+
+- User clarified that repository/project instructions are excluded from this
+  product. Removed the project browser, native picker bindings and project-read
+  endpoints added in the immediately preceding change; no project file changed.
+- Read-only `copilot instruction list --json` ran outside a project with automatic
+  updates disabled and returned no local custom instruction entries. This does
+  not establish the absence of GitHub-account or active-session instructions.
+- User settings had no instruction configuration, and standard local personal
+  files were absent. General source identification remains pending the Copilot
+  surface where the user saved the guidance. No instruction content or auth
+  configuration values were logged.
+
+
+## Copilot repository instructions — 9 October 2026
+
+- A focused filename search found an existing repository-scoped
+  `.github/copilot-instructions.md`. The previous global-file absence finding
+  did not establish that Copilot had no project instructions. Contents were not logged.
+- Added explicit native project folder selection and a separate read-only project
+  instruction browser. Known root instructions and modular rule locations are
+  inventoried only below the selected folder. They never enter global distribution.
+- Project read isolation uses rooted file access. Unregistered paths and escaping
+  symlinks are rejected; the isolated sample cannot access real projects.
+- Client regressions, frontend tests and frontend compilation passed. No user
+  instruction file or provider account was modified. Native project-picker GUI
+  interaction is not claimed as automated acceptance coverage.
+
+
+## Instruction source visibility and aliases — 9 October 2026
+
+- Added explicit agent/file selection, per-file saved/empty/not-created metadata,
+  source reload and physical-file grouping. The same Gemini/Antigravity or Copilot
+  source appears once, with the agent aliases affected by editing shown in review.
+- A metadata-only inspection found the standard Codex global file present on this
+  Mac; the standard Claude Code, Gemini and Copilot main global files were absent.
+  No missing user files were created and no instruction contents were logged.
+- Antigravity documented global alternatives and flat rule directories, Gemini
+  configured Markdown context names, and VS Code Local user profile instruction
+  files are inventoried. Project paths, task prompts, and non-Markdown settings
+  are excluded. Existing shared distribution paths remain unchanged.
+- Instruction/client tests, targeted discovery regressions, race checks, static
+  checks, 14 frontend tests and frontend compilation passed. Packaged Mac Bridge
+  passed. Updated ARM64/Intel Mac application, ZIPs and PKG installers were built;
+  this step does not claim native GUI automation or Windows package refresh.
+
+
+## Easy desktop installers — 8 October 2026
+
+- Created macOS Apple Silicon/Intel product PKGs and Windows x64/ARM64 single-file
+  GUI Setup executables. Windows packages are embedded; users do not extract a ZIP.
+  Start menu registration and per-user installation reuse the protected installer.
+- Setup extraction tests and static checks passed: payload integrity, architecture,
+  escaping paths and tampering. Both PE architectures and their embedded package
+  bytes/digests were checked on this Mac. Windows execution is not claimed.
+- macOS PKG payloads contain only the Applications/MCPDeck.app component; relocation
+  is disabled. License resources accompany the product archive. Package payloads
+  were inspected; actual installation into Applications was not performed.
+- hdiutil could not access a disk image device locally, so local DMG creation failed.
+  The standard PKG installer was produced instead; the optional DMG script remains.
+- These local installers are not Developer ID/notarized or Authenticode signed.
+  The CI workflow was extended to build installers but not remotely executed here.
+
+
+## Lightweight desktop distributions — 8 October 2026
+
+- Stripped production builds produced macOS arm64/amd64 and Windows amd64/arm64
+  binaries. Final ZIP integrity and executable payload hashes passed for all four.
+  macOS executable mode was preserved; Windows installer/removal scripts were present.
+- Measured application / ZIP sizes in MiB: macOS arm64 12.66 / 5.45, macOS amd64
+  13.74 / 6.01, Windows amd64 16.22 / 7.63, Windows arm64 15.02 / 6.99.
+  WebView2 runtime and MCP installations/caches are outside these application sizes.
+- Packages contain no Go sources, node_modules or user deck. Packaging rejects
+  the wrong executable architecture, symlinked assets, applications over 35 MiB
+  and archives over 20 MiB. Dependency notices are included.
+- Native macOS packaged Bridge, desktop/package tests and desktop static checks
+  passed. Windows and Intel Mac were cross compiled on this ARM Mac; real Windows
+  install/uninstall, WebView2 and GUI execution are not claimed as verified.
+  A desktop CI workflow for those checks was added but not remotely executed here.
+- Windows installation is per-user through Install.cmd/install.ps1, with a Start
+  menu shortcut and uninstall registration. It updates one executable rather than
+  retaining application-version copies; live executable replacement fails safely.
+- Agent instruction reading now includes a Current instructions view with both
+  saved personal and shared text. Personal editing remains protected. Large existing
+  document and client-display regressions passed. Browser sample data is labelled;
+  project instruction sources are not included in this global-file view.
+
+
+## CLI simplification — 8 October 2026
+
+- Added human-readable `list` / `ls` and `agents` commands; `status` retains its
+  existing JSON contract, and `list --json` delegates to that same output.
+- Grouped command help and kept existing command names, with `connect` as an
+  alias of the reviewed `install` flow. The compact panel moves secondary actions
+  into More; existing shortcuts and removal confirmation remain available.
+- Cmd/TUI tests and static checks passed. A live PTY verified the compact panel,
+  More menu and return to the main panel. No activation or sync was performed.
+- Fixed Ctrl+R's omission from shortcut validation. Doctor's runtime test now
+  isolates its home directory instead of inspecting real agent targets.
+
+
+## Desktop completion checks — 8 October 2026
+
+- The desktop executable now routes CLI/bridge invocations to the existing Go
+  commands. The packaged macOS executable passed a real stdin/stdout initialize
+  and tools/list regression; a GUI launch is not counted as a bridge check.
+- All root Go tests and static checks passed. Client/store/syncer race tests passed.
+  All 11 frontend tests passed, including native binding dispatch, backend errors,
+  line comparison and the existing Sites packaging checks.
+- Isolated browser interaction passed: enabling one server only for Cursor,
+  Direct/Bridge switching, backup restore, shared instruction review/application,
+  and discarding unsaved changes before navigation. These used temporary files.
+- A demo isolation defect was found during UI testing: automatic profile discovery
+  could add actual agent paths to the sample deck. Demo stores now explicitly
+  disable discovery; a regression verifies all demo targets stay under the sample
+  directory before and after mutation. The observed test activation changed only
+  the temporary Cursor target, not actual agent configuration.
+- Reviewed restore rejects changes to either current configuration or the backup
+  after review, and keeps the previous current file as the new backup.
+- Finder launch now appends existing Homebrew and known user executable directories
+  while preserving PATH precedence; the filtering/precedence regression passed.
+- The macOS arm64 .app built successfully; its plist and local ad-hoc signature
+  validated. The app is not Apple-notarized. Windows/Linux desktop packaging was
+  not validated in this work.
+- Native GUI automation was interrupted by the desktop host's approval-wait issue.
+  Native window rendering is not claimed as verified. No real provider account
+  installation was initiated during these desktop acceptance checks.
+
+
 ## Installation conversation console — 6 October 2026
 
 - Full local Go tests, cmd/TUI race tests and static checks passed.

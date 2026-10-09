@@ -17,7 +17,7 @@ func Execute() error { return NewRoot().Execute() }
 func NewRoot() *cobra.Command {
 	config := store.Default().Path
 	var noMouse bool
-	root := &cobra.Command{Use: "mcpdeck", Short: "Manage MCP servers across IDEs", SilenceUsage: true, Version: version}
+	root := &cobra.Command{Use: "mcpdeck", Short: "Manage MCP servers and instructions across coding agents", SilenceUsage: true, Version: version}
 	root.PersistentFlags().StringVar(&config, "config", config, "Deck configuration file")
 	root.Flags().BoolVar(&noMouse, "no-mouse", false, "Start with terminal text selection enabled instead of mouse controls")
 	getStore := func() store.Store {
@@ -45,7 +45,7 @@ func NewRoot() *cobra.Command {
 	}
 	root.AddCommand(syncCommand(getStore), bridgeCommand(getStore), addCommand(getStore), doctorCommand(getStore), cacheCommand(getStore), profilesCommand(getStore))
 	root.AddCommand(activationCommand(getStore, true), activationCommand(getStore, false))
-	root.AddCommand(statusCommand(getStore))
+	root.AddCommand(statusCommand(getStore), listCommand(getStore), agentsCommand(getStore))
 	root.AddCommand(importCommand(getStore))
 	root.AddCommand(setupCommand(getStore))
 	root.AddCommand(installCommand(getStore))
@@ -55,5 +55,26 @@ func NewRoot() *cobra.Command {
 	root.AddCommand(removeCommand(getStore))
 	root.AddCommand(discoverCommand(getStore))
 	root.AddCommand(instructionsCommand(getStore))
+	root.Long = "Manage MCP connections and shared instructions from one place.\nRun mcpdeck without a command to open the interactive panel."
+	root.Example = "  mcpdeck                               Open the panel\n  mcpdeck list                          See your MCP servers\n  mcpdeck agents                        See configured agents\n  mcpdeck install \"Add the official Git MCP\"\n  mcpdeck enable git --profile cursor    Enable for one agent\n  mcpdeck doctor                        Check your setup"
+	root.AddGroup(&cobra.Group{ID: "daily", Title: "Everyday commands:"}, &cobra.Group{ID: "connections", Title: "Add and manage connections:"}, &cobra.Group{ID: "maintenance", Title: "Maintenance:"}, &cobra.Group{ID: "advanced", Title: "Advanced and scripting:"})
+	root.SetHelpCommandGroupID("advanced")
+	root.SetCompletionCommandGroupID("advanced")
+	for _, c := range root.Commands() {
+		shorts := map[string]string{"profiles": "Show profile paths and formats", "install": "Connect an MCP with a reviewed installation", "add": "Register a server by command or URL", "import": "Import existing MCP settings", "remove": "Remove an MCP from its agents", "sync": "Apply saved settings to agents", "repair": "Repair or update an installed MCP", "doctor": "Check runtimes and configuration", "enable": "Enable an MCP (all agents unless --profile is set)", "disable": "Disable an MCP (all agents unless --profile is set)"}
+		if short, ok := shorts[c.Name()]; ok {
+			c.Short = short
+		}
+		switch c.Name() {
+		case "list", "agents", "enable", "disable", "instructions":
+			c.GroupID = "daily"
+		case "install", "add", "import", "remove", "discover":
+			c.GroupID = "connections"
+		case "sync", "doctor", "repair":
+			c.GroupID = "maintenance"
+		default:
+			c.GroupID = "advanced"
+		}
+	}
 	return root
 }

@@ -1,9 +1,28 @@
 # MCPDeck
 
-Manage MCP servers and shared personal instructions across coding agents from one terminal.
+[![CI](https://github.com/altanmehmet/mcpdeck/actions/workflows/test.yml/badge.svg)](https://github.com/altanmehmet/mcpdeck/actions/workflows/test.yml)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/altanmehmet/mcpdeck?include_prereleases)](https://github.com/altanmehmet/mcpdeck/releases)
+
+Manage MCP servers and shared personal instructions across coding agents.
+Use the terminal panel or the local desktop client with the same configuration.
 
 **Open source · MIT · alpha software.** Works on macOS, Linux and Windows.
 MCPDeck runs locally: no hosted dashboard or application database is required.
+
+[Quick start](#install) · [Daily commands](#first-run) ·
+[Agent support](#supported-agents-and-limits) · [Desktop](#desktop-client) ·
+[Documentation](docs/README.md) · [Türkçe başlangıç](docs/CLI-BASLANGIC.md)
+
+## Release status
+
+The published CLI release is **v0.1.0-alpha.4**. The source on this branch includes
+new CLI conveniences, instruction fixes and the desktop client. Those additions
+require a source build until included in a release; your installed binary's
+`mcpdeck --help` lists the commands available in that version.
+
+Desktop installers are built from source. This repository's current releases do
+not include downloadable desktop installers. [Desktop build guide](desktop/README.md).
 
 ## Why use it?
 
@@ -16,7 +35,7 @@ MCP servers, and distribute shared instructions while preserving existing person
 - **Multiple agents:** synchronize supported configuration formats, inspect existing MCPs,
   and remove externally configured entries with backups and change checks.
 - **Shared instructions:** view existing global files, edit one agent, or distribute one
-  shared text. Project instructions retain their scope.
+  shared text. Project and repository instructions are excluded.
 - **Recovery:** inspect partial sync failures, retry failed targets, and restore backups.
 - **Terminal controls:** mouse and keyboard navigation, configurable shortcuts, and clipboard support.
 
@@ -81,6 +100,9 @@ retain their existing output. [Console controls](docs/INSTALL-CONSOLE.md).
 | Task | Command / key |
 | --- | --- |
 | Open the terminal panel | `mcpdeck` |
+| List MCP servers / agents | `mcpdeck list` / `mcpdeck agents` |
+| Connect an MCP | `mcpdeck connect "Add the official Git MCP"` |
+| More panel actions | `m` |
 | Add a shared instruction | `mcpdeck instructions append 'Never log credentials.'` |
 | List existing global instruction files | `mcpdeck instructions files` |
 | Repair/update an MCP | `mcpdeck update <name>` |
@@ -104,8 +126,31 @@ Windows executables are not Authenticode signed; macOS packages are not notarize
 Archive publisher signatures and SHA-256 checksums are available for manual verification.
 [Security policy](SECURITY.md) · [Package verification](docs/RELEASING.md).
 
+## Desktop client
+
+A local macOS/Windows desktop client is available under `desktop/`. It shares the terminal
+configuration and supports reviewed MCP activation, agent modes, synchronization
+recovery, installation planning and shared instruction editing.
+It uses system WebViews and includes build scripts for Mac PKG and Windows Setup
+installers. Native Windows installation and GUI testing remain pending.
+[Build and desktop usage](desktop/README.md).
+
+## What has been tested?
+
+| Layer | Verified coverage |
+| --- | --- |
+| Configuration and global instruction files | Go regression tests and isolated CLI/terminal tests; 13 automatic instruction profiles across 11 shared paths |
+| Real instruction loading | Codex and Copilot CLI: new sessions after add, update and removal |
+| Real MCP tool calls | Codex and Copilot CLI: audited calls and enable/disable/remove lifecycle |
+| Existing services | Oracle connection discovery and Sentry authenticated identity check |
+| Other agents and operating systems | File adapters have fixture coverage; real sessions and native Windows desktop behavior are not established by those tests |
+
+These checks do not establish that every MCP or every agent session works.
+[Dated test results and commands](docs/TEST-SONUCLARI.md).
+
 ## Documentation and contributing
 
+- [Documentation index](docs/README.md)
 - [Getting started (Turkish)](docs/CLI-BASLANGIC.md)
 - [Installation chat and troubleshooting (Turkish)](docs/AKILLI-KURULUM.md)
 - [Shared instructions and repeatable tests](docs/INSTRUCTIONS.md)
