@@ -1,5 +1,35 @@
 # MCPDeck — terminalden MCP yönetimi
 
+## Hızlı başlangıç
+
+Günlük kullanım için aşağıdaki komutlar yeterlidir:
+
+| Yapmak istediğim | Komut |
+|---|---|
+| Paneli açmak | `mcpdeck` |
+| MCP sunucularını görmek | `mcpdeck list` veya `mcpdeck ls` |
+| Ajanları ve modlarını görmek | `mcpdeck agents` |
+| Yeni MCP bağlamak | `mcpdeck connect "Add the official Git MCP"` |
+| Tek ajanda etkinleştirmek | `mcpdeck enable SUNUCU --profile cursor` |
+| Tek ajanda kapatmak | `mcpdeck disable SUNUCU --profile cursor` |
+| Sorunu incelemek | `mcpdeck doctor` |
+
+`connect`, mevcut `install` komutunun kısa adıdır; tarif inceleme/onay akışı aynıdır.
+`enable` ve `disable` komutlarında `--profile` verilmezse bütün kayıtlı ajanlar etkilenir.
+`list --profile cursor` her sunucunun Cursor için açık/kapalı olduğunu gösterir.
+Scriptler için `mcpdeck status` aynı JSON çıktısını üretmeye devam eder;
+`mcpdeck list --json` da bu biçimi kullanır. İnsan için olan listede ayrıca ajan
+ayarlarında bulunan dış sunucular yer alır; JSON biçimi yönetilen sunucularla sınırlıdır.
+
+Panelde ana düğmeler New MCP, Instructions, Sync, Help ve Exit'tir.
+**More** veya `m` ile onarım, dokümantasyondan kurulum, mod değiştirme, yenileme,
+yeniden deneme, kısayol ayarlama, metin seçimi ve kaldırmaya ulaşılır.
+Menüde ↑/↓ ile seçip Enter'a basın; Esc geri döner. Önceki klavye kısayolları korunur.
+
+`mcpdeck --help` komutları günlük kullanım, bağlantılar, bakım ve ileri kullanım
+başlıklarında gösterir. Ayrıntılar için `mcpdeck list --help` gibi alt komut yardımını açın.
+
+
 ## Genel talimatlar
 
 **Instructions** düğmesine veya `g` tuşuna basın. Bütün projelerde geçerli kişisel
@@ -21,14 +51,14 @@ koruyarak tüm algılanan destekli ajanlara ekler. Terminal karşılığı:
 
 ## Dokümantasyondan kurulum
 
-Panelde **Install MCP** veya **i**, MCP dokümantasyonundan kurulum planı üretir.
+Panelde **More → Install from documentation** veya **i**, MCP dokümantasyonundan kurulum planı üretir.
 Planı onayladıktan sonra kurulum ve gerçek bağlantı testi yapılır; başarılıysa
 tespit edilen destekli ajanlara dağıtılır. Codex, Claude Code veya Gemini CLI;
 alternatif olarak OpenAI, Anthropic, Gemini veya OpenAI uyumlu API seçilebilir.
 `mcpdeck install` aynı akışı açar. `mcpdeck planner set --provider claude`
 varsayılanı değiştirir. Ayrıntılar: `AKILLI-KURULUM.md`.
 
-Kurulu bir MCP hata veriyorsa panelde MCP'yi seçip **Repair** düğmesine veya `u`
+Kurulu bir MCP hata veriyorsa panelde MCP'yi seçip **More → Repair / update selected MCP** işlemine veya `u`
 tuşuna basın. Açılan chat mevcut bağlantıyı probeler, sorunu ve kurulu araçları
 güvenli özetle ajana verir. Terminal karşılığı:
 
@@ -96,7 +126,7 @@ Terminaliniz fare olaylarını desteklemiyorsa klavye kısayollarını kullanabi
 Tab: ajan değiştir; ↑/↓: MCP seç; Space: seçili ajanda aç/kapat.
 e/d: tüm ajanlarda aç/kapat; b: Direct/Bridge modu; s: eşitle.
 n: MCP ekle; r: yeniden oku; ?: yardım; q: çıkış.
-i: kurulum asistanı; a: yardım içinden tuş ata.
+m: diğer işlemler; i: kurulum asistanı; a: yardım içinden tuş ata.
 Yeni MCP formunda Tab: alan değiştir; Ctrl+U: alanı temizle;
 Ctrl+S: planlayıcıyı başlat; Esc: vazgeç. Ctrl+R: başarısız sync hedeflerini tekrar dene.
 `mcpdeck sync status` sonuçları, `mcpdeck sync --retry-failed` tekrar denemeyi sağlar.

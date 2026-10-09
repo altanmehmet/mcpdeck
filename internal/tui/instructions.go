@@ -147,6 +147,32 @@ func (m Model) updateInstructions(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch key.String() {
+	case "ctrl+r":
+		if f.adding || (f.document == nil && string(f.text) != f.original) || (f.document != nil && string(f.text) != f.documentOriginal) {
+			f.message = "Unsaved edits: save them before reloading, or reopen the editor to discard them."
+			return m, nil
+		}
+		manager := instructions.New(m.store)
+		var text string
+		var err error
+		if f.document != nil {
+			text, err = manager.ReadDocument(m.deck, *f.document)
+		} else {
+			text, err = manager.Load()
+		}
+		if err != nil {
+			f.message = err.Error()
+			return m, nil
+		}
+		f.resetEditing()
+		f.text, f.cursor, f.offset, f.review = []rune(text), 0, 0, false
+		if f.document != nil {
+			f.documentOriginal = text
+		} else {
+			f.original = text
+		}
+		f.message = "Reloaded the saved instructions from disk."
+		return m, nil
 	case "ctrl+a", "ctrl+u", "ctrl+z":
 		if f.review {
 			f.message = "Press Esc to return to editing before changing text."
@@ -387,7 +413,7 @@ func (m Model) updateInstructions(msg tea.Msg) (tea.Model, tea.Cmd) {
 			f.text = append(append(f.text[:f.cursor], runes...), tail...)
 			f.cursor += len(runes)
 		} else {
-			f.message = "Personal instructions are limited to 24 KiB."
+			f.message = fmt.Sprintf("Text exceeds the %d byte limit.", limit)
 		}
 	}
 	return m, nil
@@ -515,7 +541,7 @@ func (m Model) instructionsView() string {
 		limit = instructions.MaxDocumentBytes
 	}
 	lines[m.height-2] = muted.Render(fmt.Sprintf(" %d / %d bytes · Ctrl+A: select all · Ctrl+U: clear · Ctrl+Z: undo", len(string(f.text)), limit))
-	lines[m.height-1] = muted.Render(" Ctrl+S: review/save  Ctrl+E: existing  Ctrl+N: add one  Ctrl+Y: copy  Esc: back")
+	lines[m.height-1] = muted.Render(" Ctrl+S: review/save  Ctrl+E: existing  Ctrl+R: reload  Ctrl+N: add one  Ctrl+Y: copy  Esc: back")
 	for i := range lines {
 		lines[i] = ansi.Truncate(lines[i], m.width, "")
 	}

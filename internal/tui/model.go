@@ -28,6 +28,8 @@ type Model struct {
 	keys                  keyPreferences
 	keyEditor             *keyEditor
 	helpPage              int
+	actionsOpen           bool
+	actionCursor          int
 }
 
 func New(d *model.Deck, s store.Store) Model {

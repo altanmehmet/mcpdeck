@@ -13,15 +13,22 @@ func TestInstallButtonAndKeyboard(t *testing.T) {
 	}
 	found := false
 	for _, b := range m.buttons() {
-		if b.action == "Install MCP" {
+		if b.action == "More" {
 			found = true
-			_, cmd = m.Update(tea.MouseMsg{X: b.x + 1, Y: b.y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-			if cmd == nil {
-				t.Fatal("install click absent")
-			}
+			m = press(m, b.x+1, b.y)
 		}
 	}
-	if !found {
-		t.Fatal("install button absent")
+	if !found || !m.actionsOpen {
+		t.Fatal("more actions button absent")
 	}
+	for i, a := range additionalActions {
+		if a.id == "install" {
+			_, cmd = m.Update(tea.MouseMsg{X: 2, Y: 4 + i, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+			if cmd == nil {
+				t.Fatal("install menu click absent")
+			}
+			return
+		}
+	}
+	t.Fatal("install menu action absent")
 }

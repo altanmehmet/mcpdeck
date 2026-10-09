@@ -293,3 +293,39 @@ func TestNativeSelectAllReplacementPreservesSharedAndUndoScope(t *testing.T) {
 		t.Fatal("undo crossed editor scope")
 	}
 }
+
+func TestInstructionReloadReadsExternalChangesAndProtectsDraft(t *testing.T) {
+	m := instructionFixture(t)
+	manager := instructions.New(m.store)
+	if err := store.AtomicWrite(manager.SourcePath, []byte("Externally updated shared guidance.")); err != nil {
+		t.Fatal(err)
+	}
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+	m = next.(Model)
+	if string(m.instructionEditor.text) != "Externally updated shared guidance." || m.instructionEditor.original != string(m.instructionEditor.text) {
+		t.Fatal("shared reload did not refresh concurrency snapshot")
+	}
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Draft.")})
+	m = next.(Model)
+	draft := string(m.instructionEditor.text)
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+	m = next.(Model)
+	if string(m.instructionEditor.text) != draft || !strings.Contains(m.instructionEditor.message, "Unsaved") {
+		t.Fatal("reload destroyed unsaved edits")
+	}
+	var err error
+	m, err = NewAgentInstructions(m.deck, m.store, "codex", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := m.instructionEditor.document.Path
+	updated := "External personal guidance.\n" + m.instructionEditor.documentOriginal
+	if err := store.AtomicWrite(path, []byte(updated)); err != nil {
+		t.Fatal(err)
+	}
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
+	m = next.(Model)
+	if string(m.instructionEditor.text) != updated || m.instructionEditor.documentOriginal != updated {
+		t.Fatal("agent reload did not refresh concurrency snapshot")
+	}
+}

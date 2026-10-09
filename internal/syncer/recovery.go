@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -124,7 +125,13 @@ func (s Syncer) RetryFailed() ([]SyncResult, error) {
 
 // Restore restores the last changed configuration, retaining the current file
 // as a backup. It does not change the deck or reconnect an agent.
-func (s Syncer) Restore(key string) error {
+func (s Syncer) Restore(key string) error { return s.restore(key, nil, nil, false) }
+
+// RestoreIfUnchanged binds a desktop review to the current file and backup bytes.
+func (s Syncer) RestoreIfUnchanged(key string, current, backup []byte) error {
+	return s.restore(key, current, backup, true)
+}
+func (s Syncer) restore(key string, expected, expectedBackup []byte, check bool) error {
 	p, ok := s.Deck.Profiles[key]
 	if !ok {
 		return fmt.Errorf("unknown profile %q", key)
@@ -134,10 +141,16 @@ func (s Syncer) Restore(key string) error {
 	if err != nil {
 		return fmt.Errorf("cannot resolve target; restore requires an existing configuration")
 	}
-	if err = store.UpdateFile(path, ".mcpdeck-backup", func([]byte, bool) ([]byte, error) {
+	if err = store.UpdateFile(path, ".mcpdeck-backup", func(current []byte, exists bool) ([]byte, error) {
+		if check && (!exists || !bytes.Equal(current, expected)) {
+			return nil, fmt.Errorf("configuration changed after review; review again")
+		}
 		backup, err := os.ReadFile(resolved + ".mcpdeck-backup")
 		if err != nil {
 			return nil, fmt.Errorf("no readable sync backup for %s", key)
+		}
+		if check && !bytes.Equal(backup, expectedBackup) {
+			return nil, fmt.Errorf("backup changed after review; review again")
 		}
 		if _, err = decodeConfig(backup, p.Format); err != nil {
 			return nil, fmt.Errorf("backup configuration is invalid; refusing restore")

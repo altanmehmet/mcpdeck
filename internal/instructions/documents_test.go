@@ -2,6 +2,7 @@ package instructions
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -153,5 +154,156 @@ func TestReplacePersonalTextPreservesRuleActivationMetadata(t *testing.T) {
 				t.Fatal("replacement removed rule metadata", err)
 			}
 		}
+	}
+}
+
+func TestPersonalTextEditorRoundTripPreservesProtectedSections(t *testing.T) {
+	header := "---\nalwaysApply: true\n---\n"
+	block := begin + "\nShared stays.\n" + end
+	raw := header + "Personal before.\n\n" + block + "\nPersonal after.\n"
+	personal, err := PersonalText(raw)
+	if err != nil || strings.Contains(personal, "Shared stays") || strings.Contains(personal, "alwaysApply") || !strings.Contains(personal, "Personal after.") {
+		t.Fatal(personal, err)
+	}
+	updated, err := ReplacePersonalText(raw, personal+"\nNew rule.")
+	if err != nil || !strings.HasPrefix(updated, header) || !strings.Contains(updated, block) {
+		t.Fatal("round trip changed protected content", err)
+	}
+	if _, err = PersonalText(begin + "\nBroken"); err == nil {
+		t.Fatal("malformed managed block accepted")
+	}
+}
+
+func TestCurrentTextSupportsLargeExistingDocuments(t *testing.T) {
+	raw := "---\nalwaysApply: true\n---\n" + strings.Repeat("Existing personal rule.\n", 2000) + begin + "\nShared guidance.\n" + end
+	current, err := CurrentText(raw)
+	if err != nil || !strings.Contains(current, "Shared guidance.") || strings.Contains(current, "alwaysApply") || strings.Contains(current, begin) {
+		t.Fatal("current document display invalid", err)
+	}
+	if len(current) <= MaxBytes {
+		t.Fatal("fixture did not exercise large document")
+	}
+}
+
+func TestAntigravityGlobalAlternativesAndFlatRuleDiscovery(t *testing.T) {
+	m, d := fixture(t)
+	for _, path := range []string{filepath.Join(m.Home, ".gemini", "AGENTS.md"), filepath.Join(m.Home, ".gemini", "config", "GEMINI.md"), filepath.Join(m.Home, ".gemini", "config", "rules", "security.md")} {
+		write(t, path, "Current global guidance.")
+	}
+	nested := filepath.Join(m.Home, ".gemini", "config", "rules", "nested", "ignored.md")
+	write(t, nested, "Not a flat global rule.")
+	docs, err := m.Documents(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	for _, doc := range docs {
+		if doc.Agent == "antigravity" {
+			seen[doc.Path] = true
+		}
+	}
+	if !seen[filepath.Join(m.Home, ".gemini", "AGENTS.md")] || !seen[filepath.Join(m.Home, ".gemini", "config", "rules", "security.md")] || seen[nested] {
+		t.Fatal("wrong global rule scope", seen)
+	}
+}
+
+func TestGeminiConfiguredMarkdownContextIsInventoried(t *testing.T) {
+	m, d := fixture(t)
+	write(t, filepath.Join(m.Home, ".gemini", "settings.json"), `{"context":{"fileName":["AGENTS.md","../project.md","oauth_creds.json"]}}`)
+	agentFile := filepath.Join(m.Home, ".gemini", "AGENTS.md")
+	write(t, agentFile, "Configured global context.")
+	write(t, filepath.Join(m.Home, ".gemini", "oauth_creds.json"), "not an instruction file")
+	docs, err := m.Documents(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, doc := range docs {
+		if doc.Agent == "gemini-cli" {
+			if doc.Path == agentFile {
+				found = true
+			}
+			if strings.HasSuffix(doc.Path, "oauth_creds.json") {
+				t.Fatal("non-Markdown settings exposed")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("configured context filename not discovered")
+	}
+}
+
+func TestCopilotLocalProfileInstructionsAreVisibleButPromptsExcluded(t *testing.T) {
+	m, d := fixture(t)
+	user := filepath.Join(m.Home, ".config", "Code", "User")
+	if runtime.GOOS == "darwin" {
+		user = filepath.Join(m.Home, "Library", "Application Support", "Code", "User")
+	}
+	if runtime.GOOS == "windows" {
+		appData := filepath.Join(m.Home, "AppData", "Roaming")
+		t.Setenv("APPDATA", appData)
+		user = filepath.Join(appData, "Code", "User")
+	}
+	rule := filepath.Join(user, "profiles", "profile-one", "prompts", "security.instructions.md")
+	prompt := filepath.Join(user, "prompts", "work.prompt.md")
+	write(t, rule, "---\napplyTo: '**'\n---\nCurrent Local profile guidance.")
+	write(t, prompt, "This is a task prompt, not a global rule.")
+	docs, err := m.Documents(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, doc := range docs {
+		if doc.Agent == "copilot" {
+			if doc.Path == rule {
+				found = true
+			}
+			if doc.Path == prompt {
+				t.Fatal("prompt was shown as an instruction")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("VS Code Local profile rules not inventoried")
+	}
+}
+
+func TestSelectDocumentDoesNotHideModularGuidance(t *testing.T) {
+	m, d := fixture(t)
+	primary := filepath.Join(m.CopilotHome, "copilot-instructions.md")
+	rule := filepath.Join(m.CopilotHome, "instructions", "style.instructions.md")
+	write(t, rule, "Use existing conventions.")
+	ignored := filepath.Join(m.CopilotHome, "instructions", "notes.md")
+	write(t, ignored, "Not a Copilot instruction file.")
+	for _, empty := range []bool{false, true} {
+		if empty {
+			write(t, primary, "\n")
+		}
+		doc, err := m.SelectDocument(d, "copilot-cli", "")
+		if err != nil || doc.Path != rule {
+			t.Fatal("modular guidance hidden", doc, err)
+		}
+	}
+	docs, err := m.Documents(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, doc := range docs {
+		if doc.Path == ignored {
+			t.Fatal("unloaded Markdown listed as instructions")
+		}
+	}
+	write(t, filepath.Join(m.CopilotHome, "instructions", "security.instructions.md"), "Never log credentials.")
+	if _, err := m.SelectDocument(d, "copilot-cli", ""); err == nil {
+		t.Fatal("ambiguous modular selection must require --path")
+	}
+	doc, err := m.SelectDocument(d, "copilot-cli", primary)
+	if err != nil || doc.Path != primary {
+		t.Fatal("explicit path changed", err)
+	}
+	write(t, primary, "Main guidance.")
+	doc, err = m.SelectDocument(d, "copilot-cli", "")
+	if err != nil || doc.Path != primary {
+		t.Fatal("established populated main file lost priority", err)
 	}
 }

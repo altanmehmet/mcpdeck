@@ -1,0 +1,100 @@
+name: desktop-packages
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - 'internal/client/**'
+      - '.github/workflows/desktop.yml'
+permissions:
+  contents: read
+jobs:
+  macos:
+    strategy:
+      matrix:
+        arch: [arm64, amd64]
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/frontend/package-lock.json
+      - run: npm ci
+        working-directory: desktop/frontend
+      - run: sh desktop/scripts/build-macos.sh
+        env:
+          MCPDECK_ARCH: ${{ matrix.arch }}
+      - name: Test packaged bridge and package size
+        working-directory: desktop
+        run: |
+          if [ "${{ matrix.arch }}" = "$(go env GOARCH)" ]; then
+            MCPDECK_TEST_BINARY="$PWD/build/bin/MCPDeck.app/Contents/MacOS/MCPDeck" go test -tags production ./...
+          else
+            go test -tags production ./...
+          fi
+          go run ./package -platform darwin -arch "${{ matrix.arch }}" -source build/bin/MCPDeck.app
+          MCPDECK_ARCH="${{ matrix.arch }}" sh scripts/package-pkg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-${{ matrix.arch }}
+          path: |
+            desktop/build/bin/*.zip
+            desktop/build/bin/*.dmg
+            desktop/build/bin/*.pkg
+            desktop/build/bin/*.sha256
+            desktop/build/bin/*.size.json
+  windows:
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/frontend/package-lock.json
+      - run: ./desktop/scripts/build-windows.ps1 -Architecture '${{ matrix.arch }}'
+      - name: Test native executable and install/uninstall
+        if: matrix.arch == 'amd64'
+        working-directory: desktop
+        run: |
+          $env:MCPDECK_TEST_BINARY="$PWD/build/bin/windows-amd64/MCPDeck.exe"
+          $verification = & "$PWD/build/bin/MCPDeck-Setup-amd64.exe" --verify
+          if ($verification -notmatch 'Installer payload verified') { throw 'Setup payload did not verify' }
+          if ($LASTEXITCODE -ne 0) { throw 'Setup payload check failed' }
+          go test -tags production ./...
+          if ($LASTEXITCODE -ne 0) { throw 'Desktop tests failed' }
+          $sample=Join-Path $env:RUNNER_TEMP 'mcpdeck-desktop-package'
+          Expand-Archive -LiteralPath build/bin/MCPDeck-windows-amd64.zip -DestinationPath $sample
+          $package=Join-Path $sample 'MCPDeck-windows-amd64'
+          $prefix=Join-Path $env:RUNNER_TEMP 'mcpdeck-desktop-install'
+          & "$package/install.ps1" -Prefix $prefix -NoLaunch -NoShortcuts
+          if (!(Test-Path "$prefix/MCPDeck.exe")) { throw 'Installed executable missing' }
+          & "$prefix/uninstall.ps1" -Yes
+          if (Test-Path "$prefix/MCPDeck.exe") { throw 'Uninstall did not remove executable' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows-${{ matrix.arch }}
+          path: |
+            desktop/build/bin/*.zip
+            desktop/build/bin/MCPDeck-Setup-*.exe
+            desktop/build/bin/*.sha256
+            desktop/build/bin/*.size.json

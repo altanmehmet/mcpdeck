@@ -1,0 +1,10 @@
+{
+ "$schema": "https://wails.io/schemas/config.v2.json",
+ "name": "MCPDeck",
+ "outputfilename": "MCPDeck",
+ "frontend:dir": "frontend",
+ "frontend:install": "npm ci",
+ "frontend:build": "npm run build",
+ "author": {"name": "MCPDeck contributors"},
+ "info": {"productName": "MCPDeck", "productVersion": "0.1.0", "copyright": "MIT", "comments": "Local MCP and shared instruction manager"}
+}

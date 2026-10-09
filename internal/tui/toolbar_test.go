@@ -29,3 +29,34 @@ func TestToolbarDoesNotAddTerminalRows(t *testing.T) {
 		}
 	}
 }
+
+func TestCompactToolbarAndActionMenu(t *testing.T) {
+	m := mouseFixture(t)
+	for _, width := range []int{64, 80, 120} {
+		m.width = width
+		for _, b := range m.buttons() {
+			if b.x+b.w > width {
+				t.Fatal("partially visible button remains clickable")
+			}
+		}
+	}
+	m.width = 80
+	next, _ := m.Update(keyMessage(m.keys.Bindings["actions"]))
+	m = next.(Model)
+	if !m.actionsOpen || !strings.Contains(m.View(), "MORE ACTIONS") {
+		t.Fatal("menu did not open")
+	}
+	for i, a := range additionalActions {
+		if a.id == "remove" {
+			m.actionCursor = i
+		}
+	}
+	next, _ = m.Update(keyMessage("enter"))
+	m = next.(Model)
+	if m.actionsOpen || m.removing != "demo" {
+		t.Fatal("removal confirmation bypassed")
+	}
+	if err := validateKeyPreferences(defaultKeyPreferences()); err != nil {
+		t.Fatal("default shortcuts cannot be saved", err)
+	}
+}

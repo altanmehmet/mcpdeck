@@ -70,3 +70,40 @@ func TestInstructionsCLISetStatusClear(t *testing.T) {
 		t.Fatal(string(raw), err)
 	}
 }
+
+func TestInstructionsCLIModularReadAndAgentStatus(t *testing.T) {
+	home := t.TempDir()
+	testutil.SetHome(t, home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	t.Setenv("COPILOT_HOME", filepath.Join(home, ".copilot"))
+	s := store.Store{Path: filepath.Join(home, "deck", "deck.json"), DisableDiscovery: true}
+	d := &model.Deck{Version: 1, Servers: map[string]model.ServerConfig{}, Profiles: map[string]model.ProfileConfig{
+		"copilot-cli": {TargetPath: filepath.Join(home, ".copilot", "mcp-config.json"), Format: "copilot-cli"},
+		"codex":       {TargetPath: filepath.Join(home, ".codex", "config.toml"), Format: "codex"},
+	}}
+	if err := s.Save(d); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(home, ".copilot", "instructions", "style.instructions.md")
+	if err := store.AtomicWrite(path, []byte("Visible personal guidance.")); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) (string, error) {
+		c := instructionsCommand(func() store.Store { return s })
+		var out bytes.Buffer
+		c.SetOut(&out)
+		c.SetErr(&out)
+		c.SetArgs(args)
+		err := c.Execute()
+		return out.String(), err
+	}
+	if out, err := run("show", "--agent", "copilot-cli"); err != nil || out != "Visible personal guidance." {
+		t.Fatal("modular read failed", out, err)
+	}
+	if out, err := run("status", "--agent", "copilot-cli"); err != nil || !strings.Contains(out, "copilot-cli:") || strings.Contains(out, "codex:") {
+		t.Fatal("agent status ignored filter", out, err)
+	}
+	if _, err := run("status", "--agent", "unknown"); err == nil {
+		t.Fatal("unknown agent accepted")
+	}
+}

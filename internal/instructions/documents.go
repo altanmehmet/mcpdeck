@@ -1,10 +1,12 @@
 package instructions
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode/utf8"
 
@@ -33,14 +35,37 @@ func (m Manager) SelectDocument(d *model.Deck, agent, path string) (Document, er
 		return matches[0], nil
 	}
 	if len(matches) > 1 && path == "" {
+		// Prefer the established main file when it contains guidance or cannot
+		// be read. An absent/empty main file must not hide modular instructions.
+		var primary *Document
 		for _, target := range m.Targets(d) {
 			if target.Agent == agent {
 				for _, doc := range matches {
 					if target.Path == doc.Path {
-						return doc, nil
+						primary = &doc
+						text, err := m.ReadDocument(d, doc)
+						if err != nil || strings.TrimSpace(text) != "" {
+							return doc, nil
+						}
 					}
 				}
 			}
+		}
+		var populated []Document
+		for _, doc := range matches {
+			text, err := m.ReadDocument(d, doc)
+			if err != nil {
+				return Document{}, err
+			}
+			if strings.TrimSpace(text) != "" {
+				populated = append(populated, doc)
+			}
+		}
+		if len(populated) == 1 {
+			return populated[0], nil
+		}
+		if len(populated) == 0 && primary != nil {
+			return *primary, nil
 		}
 		return Document{}, fmt.Errorf("multiple global files exist for %s; list instructions files and select one with --path", agent)
 	}
@@ -60,6 +85,48 @@ func (m Manager) Documents(d *model.Deck) ([]Document, error) {
 			continue
 		}
 		paths := []string{target.Path}
+		// Antigravity's documented standalone global alternatives are read sources,
+		// while shared distribution keeps its established GEMINI.md target.
+		if target.Agent == "gemini-cli" {
+			settings := filepath.Join(m.Home, ".gemini", "settings.json")
+			if err := m.checkParents(settings); err == nil {
+				if raw, err := readRegular(settings); err == nil && len(raw) > 0 {
+					var cfg struct {
+						Context struct {
+							FileName json.RawMessage `json:"fileName"`
+						} `json:"context"`
+					}
+					if json.Unmarshal(raw, &cfg) == nil && len(cfg.Context.FileName) > 0 {
+						var names []string
+						var single string
+						if json.Unmarshal(cfg.Context.FileName, &single) == nil {
+							names = []string{single}
+						} else {
+							_ = json.Unmarshal(cfg.Context.FileName, &names)
+						}
+						if len(names) <= 32 {
+							for _, name := range names {
+								if name == "" || name == "." || name == ".." || !strings.HasSuffix(strings.ToLower(name), ".md") || strings.ContainsAny(name, "/\\\x00") {
+									continue
+								}
+								path := filepath.Join(m.Home, ".gemini", name)
+								if info, e := os.Lstat(path); e == nil && info.Mode().IsRegular() {
+									paths = append(paths, path)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if target.Agent == "antigravity" {
+			for _, path := range []string{filepath.Join(m.Home, ".gemini", "AGENTS.md"), filepath.Join(m.Home, ".gemini", "config", "AGENTS.md"), filepath.Join(m.Home, ".gemini", "config", "GEMINI.md")} {
+				if info, e := os.Lstat(path); e == nil && info.Mode().IsRegular() {
+					paths = append(paths, path)
+				}
+			}
+		}
+
 		if target.Agent == "codex" && filepath.Base(target.Path) == "AGENTS.override.md" {
 			paths = append(paths, filepath.Join(m.CodexHome, "AGENTS.md"))
 		}
@@ -107,6 +174,27 @@ func (m Manager) Documents(d *model.Deck) ([]Document, error) {
 		if target.Agent == "cline" || strings.HasPrefix(target.Agent, "cline-vscode-") {
 			extraRoots = []string{filepath.Join(m.Home, "Documents", "Cline", "Rules"), filepath.Join(m.Home, ".cline", "rules"), filepath.Join(m.Home, "Cline", "Rules")}
 		}
+		if target.Agent == "antigravity" {
+			extraRoots = append(extraRoots, filepath.Join(m.Home, ".gemini", "config", "rules"), filepath.Join(m.Home, ".gemini", "antigravity-cli", "rules"))
+		}
+		if target.Agent == "copilot" {
+			// Local VS Code stores user instruction files in profile storage. Never
+			// derive these paths from arbitrary workspace MCP configuration paths.
+			var user string
+			switch runtime.GOOS {
+			case "darwin":
+				user = filepath.Join(m.Home, "Library", "Application Support", "Code", "User")
+			case "windows":
+				if appData := os.Getenv("APPDATA"); appData != "" {
+					user = filepath.Join(appData, "Code", "User")
+				}
+			default:
+				user = filepath.Join(m.Home, ".config", "Code", "User")
+			}
+			if user != "" {
+				extraRoots = append(extraRoots, filepath.Join(user, "prompts"), filepath.Join(user, "profiles"))
+			}
+		}
 		for _, root := range extraRoots {
 			if root == filepath.Dir(target.Path) {
 				continue
@@ -126,6 +214,15 @@ func (m Manager) Documents(d *model.Deck) ([]Document, error) {
 					return nil
 				}
 				if !entry.IsDir() && strings.HasSuffix(path, ".md") {
+					if (target.Agent == "copilot-cli" || target.Agent == "copilot") && !strings.HasSuffix(path, ".instructions.md") {
+						return nil
+					}
+					if target.Agent == "antigravity" && filepath.Dir(path) != root {
+						return nil
+					}
+					if target.Agent == "copilot" && (filepath.Base(root) == "prompts" || filepath.Base(root) == "profiles") && !strings.HasSuffix(path, ".instructions.md") {
+						return nil
+					}
 					paths = append(paths, path)
 				}
 				if len(paths) > 1000 {
@@ -225,6 +322,22 @@ func ReplacePersonalText(current, replacement string) (string, error) {
 	return replacement + block + "\n", nil
 }
 
+// PersonalText hides the managed shared block and rule activation metadata from
+// a personal-text-only editor. ReplacePersonalText restores both when saving.
+func PersonalText(raw string) (string, error) {
+	block, err := managedBlock(raw)
+	if err != nil {
+		return "", err
+	}
+	text := strings.Replace(raw, block, "", 1)
+	if strings.HasPrefix(text, "---\n") {
+		if finish := strings.Index(text[4:], "\n---\n"); finish >= 0 {
+			text = text[4+finish+5:]
+		}
+	}
+	return strings.TrimSpace(text), nil
+}
+
 // SaveDocument edits an existing agent's personal text. Shared instructions
 // remain owned by the central editor and cannot silently drift in one agent.
 func (m Manager) SaveDocument(d *model.Deck, doc Document, text, expected string) error {
@@ -310,4 +423,19 @@ func AppendText(current, addition string) (string, error) {
 		text += addition
 	}
 	return text, Validate(text)
+}
+
+// CurrentText displays the saved guidance in this one file, including shared
+// guidance. Personal editing still uses PersonalText to protect the shared block.
+func CurrentText(raw string) (string, error) {
+	if _, err := managedBlock(raw); err != nil {
+		return "", err
+	}
+	text := strings.ReplaceAll(strings.ReplaceAll(raw, begin, ""), end, "")
+	if strings.HasPrefix(text, "---\n") {
+		if finish := strings.Index(text[4:], "\n---\n"); finish >= 0 {
+			text = text[4+finish+5:]
+		}
+	}
+	return strings.TrimSpace(text), nil
 }

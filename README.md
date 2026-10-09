@@ -81,6 +81,9 @@ retain their existing output. [Console controls](docs/INSTALL-CONSOLE.md).
 | Task | Command / key |
 | --- | --- |
 | Open the terminal panel | `mcpdeck` |
+| List MCP servers / agents | `mcpdeck list` / `mcpdeck agents` |
+| Connect an MCP | `mcpdeck connect "Add the official Git MCP"` |
+| More panel actions | `m` |
 | Add a shared instruction | `mcpdeck instructions append 'Never log credentials.'` |
 | List existing global instruction files | `mcpdeck instructions files` |
 | Repair/update an MCP | `mcpdeck update <name>` |
@@ -103,6 +106,13 @@ MCPDeck never treats a handshake as proof of database or account access.
 Windows executables are not Authenticode signed; macOS packages are not notarized.
 Archive publisher signatures and SHA-256 checksums are available for manual verification.
 [Security policy](SECURITY.md) · [Package verification](docs/RELEASING.md).
+
+## Desktop client
+
+A local macOS desktop client is available under `desktop/`. It shares the terminal
+configuration and supports reviewed MCP activation, agent modes, synchronization
+recovery, installation planning and shared instruction editing.
+[Build and desktop usage](desktop/README.md).
 
 ## Documentation and contributing
 
