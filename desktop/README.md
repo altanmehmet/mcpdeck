@@ -1,8 +1,13 @@
 # MCPDeck desktop
 
-MCPDeck'in yerel macOS arayüzü. Mevcut Go iş mantığını Wails üzerinden kullanır;
+MCPDeck'in yerel macOS ve Windows arayüzü. Mevcut Go iş mantığını Wails üzerinden kullanır;
 React arayüzü uygulamanın içine gömülür. Normal kullanımda tarayıcı sunucusu, Node
 veya ayrı bir MCPDeck terminal uygulaması gerekmez.
+
+Bu sayfa kaynak koddan derleme ve yerel paketlerin kullanımını anlatır. Şu anki
+GitHub release'lerinde masaüstü kurucusu yayımlanmamıştır. Mac yerel uygulama ve
+Bridge kontrol edildi; Windows paketleri derlendi, ancak gerçek Windows GUI ve
+kurulum/kaldırma doğrulaması henüz tamamlanmadı.
 
 ## Açılış ve kullanım
 
@@ -53,8 +58,8 @@ sh desktop/scripts/build-macos.sh
 Node farklı konumdaysa `MCPDECK_NODE=/tam/yol/node` kullanın. Script frontend testlerini
 çalıştırır, frontend'i derler, Go uygulamasını gömülü varlıklarla derler, `.app` yapısını
 ve ikonlarını oluşturur ve yerel ad-hoc imza uygular. Bu Apple notarization değildir.
-Windows/Linux için bu macOS paketleme scripti kullanılmaz; Wails platform araçları gerekir.
-Bu çalışma kapsamında Windows/Linux masaüstü paketleri doğrulanmamıştır.
+Windows için aşağıdaki Windows build scriptlerini kullanın. Linux masaüstü paketi
+bu çalışma kapsamında doğrulanmamıştır.
 
 ## Geliştirici önizlemesi
 
