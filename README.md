@@ -68,7 +68,8 @@ mcpdeck
    Start a new agent session to load the configuration; account/tool access needs a real tool call.
 
 Choose **Instructions** (`g`) to manage shared personal rules. `Ctrl+S` reviews changes;
-press it again to save and distribute. **Existing** opens current global files;
+press it again to save, distribute and return to the main panel. Back/Esc closes
+the editor and discards unsaved drafts. **Existing** opens current global files;
 **Add one** appends a rule without replacing earlier shared guidance.
 
 Interactive installation and repair use a dedicated terminal conversation: a fixed

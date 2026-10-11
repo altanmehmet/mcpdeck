@@ -115,10 +115,30 @@ def run(binary):
             wait(lambda: "a-local" not in deck()["servers"])
             for profile in deck()["profiles"].values():
                 assert "a-local" not in pathlib.Path(profile["target_path"]).read_text()
+            # Saving instructions returns to the main panel; Back drops append drafts.
+            os.write(master, b"g")
+            text("MCPDECK / PERSONAL INSTRUCTIONS")
+            paste("Türkçe yanıt ver.")
+            os.write(master, b"\x13")
+            text("Review the global targets")
+            os.write(master, b"\x13")
+            source = root / "instructions.md"
+            wait(lambda: source.exists() and "Türkçe yanıt ver." in source.read_text())
+            text("Instructions saved.")
+            os.write(master, b"g")
+            for _ in range(4):
+                drain()
+            os.write(master, b"\x0e")
+            text("MCPDECK / ADD ONE SHARED INSTRUCTION")
+            paste("Unsaved temporary draft")
+            os.write(master, b"\x1b")
+            for _ in range(4):
+                drain()
+            assert "Unsaved temporary draft" not in source.read_text()
             os.write(master, b"q")
             wait(lambda: process.poll() is not None)
             assert process.returncode == 0
-            print("PASS: real PTY natural-language form, eight-agent sync, single/all toggles, secret-safe output, removal, help and exit")
+            print("PASS: real PTY natural-language form, eight-agent sync, single/all toggles, secret-safe output, removal, instructions save/back, help and exit")
         finally:
             if process.poll() is None:
                 process.terminate()
