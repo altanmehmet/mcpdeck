@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pelletier/go-toml/v2"
 	"github.com/altanmehmet/mcpdeck/internal/model"
+	"github.com/pelletier/go-toml/v2"
 )
 
 func serverField(format string) string {
@@ -97,7 +97,9 @@ func profileServerEntry(cfg model.ServerConfig, p model.ProfileConfig) map[strin
 }
 func decodeConfig(b []byte, format string) (map[string]any, error) {
 	root := map[string]any{}
-	if b == nil {
+	// Agents may create an empty placeholder before the first MCP is configured.
+	// Only an empty/whitespace file is equivalent to a missing configuration.
+	if len(bytes.TrimSpace(b)) == 0 {
 		return root, nil
 	}
 	if format == "codex" {
