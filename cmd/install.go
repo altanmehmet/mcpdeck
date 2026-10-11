@@ -114,14 +114,9 @@ func installCommand(get func() store.Store) *cobra.Command {
 				opts.KeyEnv = keyEnv
 			}
 			if interactive && !c.Flags().Changed("provider") {
-				fmt.Fprintf(c.OutOrStdout(), "Connected planning agent: %s\nOptions: %s\nChoose an agent (Enter keeps %s): ", opts.Provider, strings.Join(install.Providers, ", "), opts.Provider)
-				selected, e := input.ReadString('\n')
-				if e != nil {
-					return e
-				}
-				selected = strings.TrimSpace(selected)
-				if selected != "" && selected != opts.Provider {
-					opts = install.PlannerOptions{Provider: selected}
+				opts, err = chooseDetectedPlanner(c, input, opts)
+				if err != nil {
+					return err
 				}
 			}
 			if interactive && opts.IsAPI() && opts.Model == "" {

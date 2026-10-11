@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -20,6 +21,8 @@ type ConsolePlan struct {
 type ConsoleStep struct{ Description, Command, Directory string }
 type ConsoleEvent struct {
 	Kind, Text string
+	Choices    []string
+	Selected   int
 	Plan       *ConsolePlan
 	Secret     bool
 	Err        error
@@ -36,6 +39,8 @@ type InstallConsole struct {
 	width, height                                       int
 	provider, stage, prompt                             string
 	entries                                             []consoleEntry
+	choices                                             []string
+	choice                                              int
 	draft, private                                      []rune
 	cursor, scroll, planScroll, revision, step          int
 	plan                                                *ConsolePlan
@@ -148,7 +153,14 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.completed = max(m.completed, current-1)
 			}
 			m.add("STEP", msg.Text)
+		case "choices":
+			m.choices = append([]string(nil), msg.Choices...)
+			m.choice = min(max(0, msg.Selected), max(0, len(m.choices)-1))
+			m.waiting, m.secret, m.fullPlan, m.help = true, false, false, false
+			m.prompt, m.stage = consolePlain(msg.Text), "Choose agent"
+			m.draft, m.private = nil, nil
 		case "await":
+			m.choices = nil
 			if m.stopping {
 				break
 			}
@@ -171,6 +183,7 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.stage = "Your turn"
 			}
 		case "done":
+			m.choices = nil
 			m.fullPlan = false
 			m.finished = true
 			m.now = time.Now()
@@ -188,6 +201,11 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.listen()
 	case tea.MouseMsg:
+		if m.waiting && len(m.choices) > 0 && msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft && msg.Y >= 7 && msg.Y < 7+len(m.choices) && msg.Y < m.height-5 {
+			index := msg.Y - 7
+			cmd := m.selectChoice(index)
+			return m, cmd
+		}
 		if msg.Button == tea.MouseButtonWheelUp {
 			if m.fullPlan {
 				m.planScroll = max(0, m.planScroll-3)
@@ -227,6 +245,18 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.KeyMsg:
+		if m.waiting && len(m.choices) > 0 && msg.String() != "ctrl+c" {
+			switch msg.String() {
+			case "up", "shift+tab":
+				m.choice = (m.choice + len(m.choices) - 1) % len(m.choices)
+			case "down", "tab":
+				m.choice = (m.choice + 1) % len(m.choices)
+			case "enter":
+				cmd := m.selectChoice(m.choice)
+				return m, cmd
+			}
+			return m, nil
+		}
 		switch msg.String() {
 		case "ctrl+c":
 			if m.finished {
@@ -332,6 +362,14 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return m, nil
 }
+func (m *InstallConsole) selectChoice(index int) tea.Cmd {
+	label := m.choices[index]
+	m.choices = nil
+	command := m.send(strconv.Itoa(index), false)
+	m.entries[len(m.entries)-1].text = label
+	return command
+}
+
 func (m *InstallConsole) send(text string, secret bool) tea.Cmd {
 	m.waiting = false
 	if secret {
@@ -446,7 +484,19 @@ func (m InstallConsole) View() string {
 	lines[1] = fmt.Sprintf(" %s  ·  %s  ·  %s", consolePlain(m.provider), consolePlain(m.stage), elapsed)
 	lines[2] = m.controls()
 	lines[3] = muted.Render(" " + strings.Repeat("─", max(1, width-2)))
-	if m.help {
+	if len(m.choices) > 0 {
+		lines[4] = title.Render(" DETECTED PLANNING AGENTS")
+		lines[5] = muted.Render(" Choose an agent. Account login is checked when planning starts.")
+		for i, label := range m.choices {
+			value := "   " + consolePlain(label)
+			if i == m.choice {
+				value = selected.Render(" › " + consolePlain(label))
+			}
+			if 7+i < height-5 {
+				lines[7+i] = value
+			}
+		}
+	} else if m.help {
 		help := []string{"INSTALLATION CHAT", "", "Ask the agent to revise the recipe before installing.", "F2 opens exact commands, sources and target agents.", "Ctrl+S continues from chat to the approval prompt.", "Enter sends the current input; an empty approval cancels.", "Passwords use a separate masked field and never enter chat.", "PgUp/PgDown or mouse wheel scroll; Ctrl+C requests cancellation.", "Esc closes help/plan; after completion Enter returns to MCPDeck.", "", "Provider account usage may apply. Keep secrets out of chat."}
 		for i, text := range consoleSlice(help, contentHeight, 0, false) {
 			lines[4+i] = " " + text
@@ -493,7 +543,10 @@ func (m InstallConsole) View() string {
 	before = ansi.TruncateLeft(before, max(0, ansi.StringWidth(before)-inputWidth+1), "")
 	after := ansi.Truncate(consolePlain(string(valueRunes[cursor:])), max(0, inputWidth-ansi.StringWidth(before)-1), "")
 	lines[height-3] = " › " + before + selected.Render("▏") + after
-	if m.secret {
+	if len(m.choices) > 0 {
+		lines[height-3] = " " + consolePlain(m.choices[m.choice])
+		lines[height-2] = muted.Render(" ↑/↓ choose  ·  Enter select  ·  Click an agent to select")
+	} else if m.secret {
 		lines[height-2] = muted.Render(" Private value · masked · not added to conversation")
 	} else {
 		lines[height-2] = muted.Render(" Enter send  ·  Ctrl+S review install  ·  F2 plan  ·  PgUp/PgDn scroll")
