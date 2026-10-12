@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/altanmehmet/mcpdeck/internal/instructions"
 	"github.com/altanmehmet/mcpdeck/internal/model"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type instructionEditor struct {
@@ -57,6 +57,17 @@ func (m *Model) openInstructions() {
 	m.instructionEditor = &instructionEditor{text: []rune(text), original: text, cursor: len([]rune(text)), results: results}
 }
 
+// Leaving the editor discards transient document, review and append state.
+// Reopening loads the last saved shared instructions from disk.
+func (m Model) closeInstructions() (tea.Model, tea.Cmd) {
+	standalone := m.instructionEditor.standalone
+	m.instructionEditor = nil
+	if standalone {
+		return m, tea.Quit
+	}
+	return m, nil
+}
+
 func (m Model) updateInstructions(msg tea.Msg) (tea.Model, tea.Cmd) {
 	f := m.instructionEditor
 	if event, ok := msg.(clipboardResultMsg); ok {
@@ -68,18 +79,17 @@ func (m Model) updateInstructions(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if event, ok := msg.(instructionsSavedMsg); ok {
 		m.busy = false
+		if event.err == nil {
+			m.status = "Instructions saved. Start new agent sessions or reload instructions."
+			return m.closeInstructions()
+		}
 		f.results = event.results
-		f.message = "Saved. Start new agent sessions or reload instructions."
-		if event.native {
-			if event.err == nil {
-				f.documentOriginal = event.text
-			}
-		} else if event.err == nil || event.text == string(f.text) {
+		if !event.native && event.text == string(f.text) {
+			// The source may have saved before distribution failed. Preserve the
+			// draft, but advance the concurrency snapshot for a safe retry.
 			f.original = event.text
 		}
-		if event.err != nil {
-			f.message = "Saved/sync incomplete: " + event.err.Error()
-		}
+		f.message = "Saved/sync incomplete: " + event.err.Error()
 		return m, nil
 	}
 	if m.busy {
@@ -165,20 +175,7 @@ func (m Model) updateInstructions(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		if f.review {
-			f.review = false
-			f.offset = 0
-			return m, nil
-		}
-		if f.document != nil || f.adding {
-			m.restoreSharedInstructions()
-			return m, nil
-		}
-		if f.standalone {
-			return m, tea.Quit
-		}
-		m.instructionEditor = nil
-		return m, nil
+		return m.closeInstructions()
 	case "ctrl+s":
 		if f.adding {
 			text, err := instructions.AppendText(string(f.sharedDraft), string(f.text))

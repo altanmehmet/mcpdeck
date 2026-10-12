@@ -151,3 +151,33 @@ func TestInstallConsoleSuccessfulStepsSurviveProbeFailure(t *testing.T) {
 		t.Fatal("result was hidden behind plan view")
 	}
 }
+
+func TestPlannerChoicesUseKeyboardAndMouseWithoutFreeText(t *testing.T) {
+	for _, mouse := range []bool{false, true} {
+		submitted := ""
+		m := NewInstallConsole(nil, make(chan struct{}), func(value string, hidden bool) { submitted = value }, func() {}, "sentry")
+		m = consoleUpdate(m, ConsoleEvent{Kind: "choices", Text: "Choose a detected planning agent", Choices: []string{"codex", "gemini"}})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("invalid-provider")})
+		if len(m.draft) != 0 {
+			t.Fatal("free text accepted in planner list")
+		}
+		var msg tea.Msg
+		if mouse {
+			msg = tea.MouseMsg{X: 4, Y: 8, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}
+		} else {
+			m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyDown})
+			msg = tea.KeyMsg{Type: tea.KeyEnter}
+		}
+		if !strings.Contains(ansi.Strip(m.View()), "DETECTED PLANNING AGENTS") {
+			t.Fatal("planner list missing")
+		}
+		updated, command := m.Update(msg)
+		if command == nil {
+			t.Fatal("selection did not submit")
+		}
+		command()
+		if submitted != "1" || updated.(InstallConsole).waiting {
+			t.Fatal("wrong planner selected")
+		}
+	}
+}
