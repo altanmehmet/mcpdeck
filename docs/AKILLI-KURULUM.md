@@ -34,6 +34,7 @@ mcpdeck install --plan plan.json
 | `codex` | Kurulu Codex CLI oturumu (mevcut varsayılan) | CLI oturumu |
 | `claude` | Kurulu Claude Code oturumu | CLI oturumu veya `ANTHROPIC_API_KEY` |
 | `gemini` | Kurulu Gemini CLI oturumu | CLI oturumu veya `GEMINI_API_KEY` / `GOOGLE_API_KEY` |
+| `agy` | Antigravity CLI; mevcut giriş oturumu | Kurulu `agy` ve giriş önbelleği |
 | `copilot` | Kurulu Copilot CLI oturumu; toolsuz planlama | Mevcut Copilot girişi veya token ortam değişkeni |
 | `openai-api` | OpenAI Responses API | `OPENAI_API_KEY` |
 | `anthropic-api` | Anthropic Messages API | `ANTHROPIC_API_KEY` |

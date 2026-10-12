@@ -207,3 +207,21 @@ func TestInstallConsoleSpaceKeyInChatAndPrivateInput(t *testing.T) {
 		}
 	}
 }
+
+func TestModelChoicesKeepSelectedRowVisibleAndMouseAligned(t *testing.T) {
+	m := NewInstallConsole(nil, make(chan struct{}), func(string, bool) {}, func() {}, "Models")
+	m = consoleUpdate(m, tea.WindowSizeMsg{Width: 80, Height: 18})
+	choices := make([]string, 20)
+	for i := range choices {
+		choices[i] = "model-" + string(rune('a'+i))
+	}
+	m = consoleUpdate(m, ConsoleEvent{Kind: "choices", Text: "Choose a model", Choices: choices, Selected: 18})
+	if !strings.Contains(ansi.Strip(m.View()), choices[18]) {
+		t.Fatal("selected model offscreen")
+	}
+	start := m.choiceStart()
+	next, cmd := m.Update(tea.MouseMsg{X: 4, Y: 7, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	if cmd == nil || next.(InstallConsole).entries[len(next.(InstallConsole).entries)-1].text != choices[start] {
+		t.Fatal("mouse model selection uses wrong row")
+	}
+}

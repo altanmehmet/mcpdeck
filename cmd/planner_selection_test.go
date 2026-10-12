@@ -63,3 +63,15 @@ func TestPlannerModelSelection(t *testing.T) {
 		}
 	}
 }
+
+func TestAgyModelCatalogChoicePreservesDefaultsAndIDs(t *testing.T) {
+	models := []install.PlannerModel{{ID: "fixture-one", Label: "Model one"}, {ID: "fixture-two", Label: "Model two"}}
+	for _, tc := range []struct{ input, want string }{{"\n", "saved-model"}, {"2\n", "fixture-one"}, {"3\n", "fixture-two"}, {"4\ncustom-model\n", "custom-model"}} {
+		c := &cobra.Command{}
+		c.SetOut(&bytes.Buffer{})
+		got, err := selectAgyModel(c, bufio.NewReader(strings.NewReader(tc.input)), install.PlannerOptions{Provider: "agy", Model: "saved-model"}, models)
+		if err != nil || got.Model != tc.want {
+			t.Fatal(got, err)
+		}
+	}
+}

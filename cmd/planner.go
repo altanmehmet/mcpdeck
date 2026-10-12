@@ -47,7 +47,7 @@ func plannerCommand(get func() store.Store) *cobra.Command {
 		fmt.Fprintln(c.OutOrStdout(), "Planlayici secimi kaydedildi. API anahtari kaydedilmedi.")
 		return nil
 	}}
-	set.Flags().StringVar(&o.Provider, "provider", "codex", "codex, claude, gemini, copilot, openai-api, anthropic-api, gemini-api, openai-compatible")
+	set.Flags().StringVar(&o.Provider, "provider", "codex", "codex, claude, gemini, copilot, agy, openai-api, anthropic-api, gemini-api, openai-compatible")
 	set.Flags().StringVar(&o.Model, "model", "", "Model identifier; required for API providers")
 	set.Flags().StringVar(&o.Executable, "executable", "", "Optional CLI executable path")
 	set.Flags().StringVar(&o.BaseURL, "base-url", "", "OpenAI-compatible API base URL, including /v1 when required")

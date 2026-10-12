@@ -201,8 +201,16 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.listen()
 	case tea.MouseMsg:
+		if m.waiting && len(m.choices) > 0 && (msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown) {
+			if msg.Button == tea.MouseButtonWheelUp {
+				m.choice = max(0, m.choice-1)
+			} else {
+				m.choice = min(len(m.choices)-1, m.choice+1)
+			}
+			return m, nil
+		}
 		if m.waiting && len(m.choices) > 0 && msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft && msg.Y >= 7 && msg.Y < 7+len(m.choices) && msg.Y < m.height-5 {
-			index := msg.Y - 7
+			index := m.choiceStart() + msg.Y - 7
 			cmd := m.selectChoice(index)
 			return m, cmd
 		}
@@ -373,6 +381,10 @@ func (m *InstallConsole) selectChoice(index int) tea.Cmd {
 	return command
 }
 
+func (m InstallConsole) choiceStart() int {
+	return max(0, m.choice-max(1, m.height-12)+1)
+}
+
 func (m *InstallConsole) send(text string, secret bool) tea.Cmd {
 	m.waiting = false
 	if secret {
@@ -490,13 +502,19 @@ func (m InstallConsole) View() string {
 	if len(m.choices) > 0 {
 		lines[4] = title.Render(" DETECTED PLANNING AGENTS")
 		lines[5] = muted.Render(" Choose an agent. Account login is checked when planning starts.")
-		for i, label := range m.choices {
+		if strings.Contains(strings.ToLower(m.prompt), "model") {
+			lines[4] = title.Render(" AVAILABLE AGY MODELS")
+			lines[5] = muted.Render(" Models reported by the installed agy CLI. Arrow keys or click to choose.")
+		}
+		start := m.choiceStart()
+		for i := start; i < min(len(m.choices), start+max(1, height-12)); i++ {
+			label := m.choices[i]
 			value := "   " + consolePlain(label)
 			if i == m.choice {
 				value = selected.Render(" › " + consolePlain(label))
 			}
-			if 7+i < height-5 {
-				lines[7+i] = value
+			if 7+i-start < height-5 {
+				lines[7+i-start] = value
 			}
 		}
 	} else if m.help {

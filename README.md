@@ -22,11 +22,11 @@ MCP servers, and distribute shared instructions while preserving existing person
 
 ## Current CLI release
 
-The binary distribution is **0.1.0-alpha.6**. Homebrew and the Windows bootstrap
+The binary distribution is **0.1.0-alpha.7**. Homebrew and the Windows bootstrap
 pin the same release with platform-specific checksums. This release includes
-name-only MCP installation, Copilot planning, CLI model selection and fixes
-for typing spaces in installation chat.
-[Release notes and packages](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.6).
+Antigravity CLI (`agy`) planning and a model picker populated from `agy models`.
+Copilot planning, CLI model selection and chat Space key fixes are also included.
+[Release notes and packages](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.7).
 
 ## Install
 
@@ -69,7 +69,7 @@ mcpdeck
 
 1. Open `mcpdeck`. It detects known agent configuration locations.
 2. Choose **New MCP** (`n`), enter a name and press Enter. Connection details are optional.
-3. Choose a detected Codex, Claude, Gemini or Copilot planner. Select a CLI model or keep its default. A saved API provider is also available.
+3. Choose a detected Codex, Claude, Gemini, Copilot or Antigravity (`agy`) planner. Select a CLI model or keep its default. A saved API provider is also available.
 4. Review sources, commands and target agents. Approve with `y` when satisfied.
 5. Enter private connection values only in the hidden input prompts.
 6. MCPDeck installs the recipe, checks MCP initialize/tool discovery, then syncs settings.
