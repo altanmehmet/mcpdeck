@@ -20,6 +20,14 @@ MCP servers, and distribute shared instructions while preserving existing person
 - **Recovery:** inspect partial sync failures, retry failed targets, and restore backups.
 - **Terminal controls:** mouse and keyboard navigation, configurable shortcuts, and clipboard support.
 
+## Current CLI release
+
+The binary distribution is **0.1.0-alpha.5**. Homebrew and the Windows bootstrap
+pin the same release with platform-specific checksums. This release includes
+name-only MCP installation, detected planner selection, empty configuration
+initialization and instruction editor navigation fixes.
+[Release notes and packages](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.5).
+
 ## Install
 
 ### macOS / Linux with Homebrew
