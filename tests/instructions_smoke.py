@@ -103,7 +103,7 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
 
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 120, 0, 0))
-    process = subprocess.Popen([binary, "--config", str(deck), "instructions"],
+    process = subprocess.Popen([binary, "--config", str(deck)],
                                cwd=project.parent, env=env, stdin=slave,
                                stdout=slave, stderr=slave, start_new_session=True)
     os.close(slave)
@@ -134,6 +134,8 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
         os.write(master, b"\x1b[200~" + text.encode() + b"\x1b[201~")
 
     try:
+        visible("MCPDECK")
+        os.write(master, b"g")
         visible("MCPDECK / PERSONAL INSTRUCTIONS")
         draft = "Terminal test: Türkçe 🚀."
         paste(draft)
@@ -143,8 +145,10 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
         assert source.read_text() == "", "Review unexpectedly wrote instructions"
         click(20, 3)
         wait(lambda: source.read_text() == draft)
-        visible("Saved. Start new agent sessions")
-        os.write(master, b"\x1b")  # Leave review.
+        visible("Instructions saved.")
+        output.clear()
+        os.write(master, b"g")  # Reopen from the main panel.
+        visible("MCPDECK / PERSONAL INSTRUCTIONS")
         time.sleep(0.2)  # Let the terminal distinguish Esc from an Alt chord.
         os.write(master, b"\x0e")  # Ctrl+N adds one shared instruction.
         visible("MCPDECK / ADD ONE SHARED INSTRUCTION")
@@ -156,12 +160,13 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
         output.clear()
         os.write(master, b"\x13")
         wait(lambda: "Added in terminal." in source.read_text())
-        visible("Saved. Start new agent sessions")
+        visible("Instructions saved.")
         assert draft in source.read_text()
+        output.clear()
+        os.write(master, b"g")
+        visible("MCPDECK / PERSONAL INSTRUCTIONS")
         os.write(master, b"\x19")  # Ctrl+Y emits OSC 52 for terminal clipboard.
         wait(lambda: b"\x1b]52;" in output)
-        os.write(master, b"\x1b")
-        time.sleep(0.2)
         os.write(master, b"\x05")  # Ctrl+E opens existing files.
         visible("MCPDECK / EXISTING GLOBAL INSTRUCTIONS")
         documents = run("files").splitlines()
@@ -177,13 +182,22 @@ with tempfile.TemporaryDirectory(prefix="mcpdeck-instructions-") as temporary:
         assert not native.read_text().startswith(prefix), "Native review unexpectedly wrote"
         click(20, 3)
         wait(lambda: native.read_text().startswith(prefix))
-        visible("Saved. Start new agent sessions")
+        visible("Instructions saved.")
         assert all(p.read_bytes() == raw for p, raw in before_native_edit.items())
         shared_before_import = source.read_bytes()
+        output.clear()
+        os.write(master, b"g")
+        visible("MCPDECK / PERSONAL INSTRUCTIONS")
+        os.write(master, b"\x05")
+        visible("MCPDECK / EXISTING GLOBAL INSTRUCTIONS")
+        click(10, codex_index + 6)
+        visible("MCPDECK / EXISTING INSTRUCTIONS / codex")
         click(8, 5)  # Use for all loads a draft, without distributing it.
         visible("Loaded as shared instructions")
         assert source.read_bytes() == shared_before_import
         os.write(master, b"\x1b")
+        time.sleep(0.2)
+        os.write(master, b"q")
         wait(lambda: process.poll() is not None)
         assert process.returncode == 0
         assert project.read_text() == "Project instructions must stay unchanged.\n"

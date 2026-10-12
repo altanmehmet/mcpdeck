@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"github.com/altanmehmet/mcpdeck/internal/testutil"
 	"os"
 	"path/filepath"
@@ -48,7 +49,7 @@ func TestInstructionsEditorRequiresReviewAndPreservesUnicode(t *testing.T) {
 	}
 	next, _ = m.Update(command())
 	m = next.(Model)
-	if m.busy || !strings.Contains(m.instructionEditor.message, "Saved") {
+	if m.busy || m.instructionEditor != nil || !strings.Contains(m.status, "saved") {
 		t.Fatal("save did not finish")
 	}
 	text, err := instructions.New(s).Load()
@@ -168,6 +169,11 @@ func TestExistingNativeEditAndUseForAll(t *testing.T) {
 	if !strings.Contains(updated, "Updated personal guidance.") {
 		t.Fatal("native save failed")
 	}
+	// Saving closes the editor. Reopening reads the saved file afresh.
+	m, err = NewAgentInstructions(m.deck, m.store, "codex", "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlF})
 	m = next.(Model)
 	if m.instructionEditor.document != nil || !strings.Contains(string(m.instructionEditor.text), "Updated personal guidance.") {
@@ -185,5 +191,80 @@ func TestExistingNativeEditAndUseForAll(t *testing.T) {
 	text, _ = manager.Load()
 	if !strings.Contains(text, "Updated personal guidance.") {
 		t.Fatal("imported instructions were not distributed")
+	}
+}
+
+func TestInstructionsSaveReturnsHomeAndReopensSavedText(t *testing.T) {
+	m := instructionFixture(t)
+	m.instructionEditor.standalone = false
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
+	m = next.(Model)
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Türkçe yanıt ver.")})
+	m = next.(Model)
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m = next.(Model)
+	next, save := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m = next.(Model)
+	next, quit := m.Update(save())
+	m = next.(Model)
+	if quit != nil || m.busy || m.instructionEditor != nil {
+		t.Fatal("successful save did not return home")
+	}
+	m.openInstructions()
+	f := m.instructionEditor
+	if !strings.Contains(string(f.text), "Türkçe yanıt ver.") || !strings.Contains(string(f.text), "Initial shared guidance.") {
+		t.Fatal("reopen did not load persisted shared text")
+	}
+	if f.review || f.adding || f.picking || f.document != nil || len(f.sharedDraft) != 0 || f.message != "" || f.offset != 0 {
+		t.Fatal("stale editor state survived save")
+	}
+}
+
+func TestInstructionsBackClosesEveryEditorMode(t *testing.T) {
+	for _, mode := range []string{"shared", "add", "review", "existing", "picker"} {
+		for _, mouse := range []bool{false, true} {
+			t.Run(mode, func(t *testing.T) {
+				m := instructionFixture(t)
+				f := m.instructionEditor
+				f.standalone = false
+				f.sharedDraft = append([]rune(nil), f.text...)
+				f.text = []rune("Unsaved temporary draft")
+				switch mode {
+				case "add":
+					f.adding = true
+				case "review":
+					f.review = true
+				case "existing":
+					f.document = &instructions.Document{Agent: "codex"}
+				case "picker":
+					f.picking = true
+				}
+				var msg tea.Msg = tea.KeyMsg{Type: tea.KeyEsc}
+				if mouse {
+					msg = tea.MouseMsg{X: 4, Y: 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+				}
+				next, command := m.Update(msg)
+				m = next.(Model)
+				if command != nil || m.instructionEditor != nil {
+					t.Fatal("Back did not return home")
+				}
+				m.openInstructions()
+				if string(m.instructionEditor.text) != "Initial shared guidance." {
+					t.Fatal("unsaved draft survived Back")
+				}
+			})
+		}
+	}
+}
+
+func TestInstructionsFailedSaveKeepsDraftForRetry(t *testing.T) {
+	m := instructionFixture(t)
+	m.instructionEditor.text = []rune("Unsaved draft")
+	m.instructionEditor.review = true
+	m.busy = true
+	next, command := m.Update(instructionsSavedMsg{err: fmt.Errorf("fixture write failed"), text: "Initial shared guidance."})
+	m = next.(Model)
+	if command != nil || m.busy || m.instructionEditor == nil || string(m.instructionEditor.text) != "Unsaved draft" {
+		t.Fatal("failed save lost the draft")
 	}
 }

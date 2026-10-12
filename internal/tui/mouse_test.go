@@ -2,10 +2,10 @@ package tui
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/altanmehmet/mcpdeck/internal/model"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -138,7 +138,7 @@ func TestNewMCPFormCapturesNameAndNaturalLanguageRequest(t *testing.T) {
 	if m.form.name != "sentry" {
 		t.Fatal("MCP name was not captured")
 	}
-	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	m = next.(Model)
 	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Track errors in my Sentry project")})
 	m = next.(Model)

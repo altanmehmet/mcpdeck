@@ -25,3 +25,17 @@ func TestInstallButtonAndKeyboard(t *testing.T) {
 		t.Fatal("install button absent")
 	}
 }
+
+func TestNewMCPNameAloneContinues(t *testing.T) {
+	m := mouseFixture(t)
+	m.form = &importForm{name: "sentry"}
+	updated, command := m.updateForm(tea.KeyMsg{Type: tea.KeyEnter})
+	if command == nil || updated.(Model).form != nil {
+		t.Fatal("name-only form did not continue")
+	}
+	m.form = &importForm{name: "  "}
+	updated, command = m.startAgenticAdd()
+	if command != nil || updated.(Model).form.message == "" {
+		t.Fatal("empty MCP name accepted")
+	}
+}
