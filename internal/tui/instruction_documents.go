@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/altanmehmet/mcpdeck/internal/instructions"
 	"github.com/altanmehmet/mcpdeck/internal/model"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func NewAgentInstructions(d *model.Deck, s store.Store, agent, path string) (Model, error) {
@@ -78,8 +78,7 @@ func (m Model) updateInstructionDocuments(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if mouse.Button == tea.MouseButtonLeft && mouse.Action == tea.MouseActionPress {
 			if mouse.Y == 2 {
-				m.restoreSharedInstructions()
-				return m, nil
+				return m.closeInstructions()
 			}
 			index := f.offset + mouse.Y - 5
 			if mouse.Y >= 5 && mouse.Y < m.height-4 && index >= 0 && index < len(f.documents) {
@@ -92,7 +91,9 @@ func (m Model) updateInstructionDocuments(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch key.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "esc", "ctrl+g":
+		case "esc":
+			return m.closeInstructions()
+		case "ctrl+g":
 			m.restoreSharedInstructions()
 			return m, nil
 		case "down":
@@ -156,7 +157,7 @@ func (m Model) instructionDocumentsView() string {
 	lines := make([]string, m.height)
 	lines[0] = title.Render(" MCPDECK / EXISTING GLOBAL INSTRUCTIONS")
 	lines[1] = muted.Render(" Includes personal files added outside MCPDeck. Project instruction files are excluded.")
-	lines[2] = " [ Shared editor ]"
+	lines[2] = " [ Back ]"
 	lines[3] = muted.Render(" Select a file to see its full current text. Ctrl+F in the editor: use for all agents.")
 	rows := max(1, m.height-9)
 	if f.selected < f.offset {
@@ -182,7 +183,7 @@ func (m Model) instructionDocumentsView() string {
 	}
 	lines[m.height-3] = " " + plain(f.message)
 	lines[m.height-2] = muted.Render(" Managed shared guidance and existing agent-specific guidance are both visible.")
-	lines[m.height-1] = muted.Render(" ↑/↓: select   Enter/click: view and edit   Esc: shared editor")
+	lines[m.height-1] = muted.Render(" ↑/↓: select   Enter/click: view and edit   Esc: back")
 	for i := range lines {
 		lines[i] = ansi.Truncate(lines[i], m.width, "")
 	}

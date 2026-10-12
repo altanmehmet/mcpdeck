@@ -53,7 +53,7 @@ func (m Model) updateForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "enter":
 		if f.field == 0 {
-			f.field = 1
+			return m.startAgenticAdd()
 		} else {
 			f.request += "\n"
 		}
@@ -103,9 +103,12 @@ func trimLastRune(s string) string {
 func (m Model) startAgenticAdd() (tea.Model, tea.Cmd) {
 	name := strings.TrimSpace(m.form.name)
 	request := strings.TrimSpace(m.form.request)
-	if name == "" || request == "" {
-		m.form.message = "Enter an MCP name and describe what you want to connect."
+	if name == "" {
+		m.form.message = "Enter an MCP name."
 		return m, nil
+	}
+	if request == "" {
+		request = "Find the official MCP server for " + name + ". Research what it does and prepare its documented installation. Ask only if the name is ambiguous; do not invent account details or credentials."
 	}
 	return m.startInstallRequest(name, request)
 }
@@ -114,7 +117,7 @@ func (m Model) formView() string {
 	f := m.form
 	lines := make([]string, m.height)
 	lines[0] = title.Render(" MCPDECK / NEW MCP")
-	lines[1] = muted.Render("Describe the connection you need. No setup URL required.")
+	lines[1] = muted.Render("Enter an MCP name. Your agent researches what it does and how to install it.")
 	lines[2] = " [ Cancel ] [ Continue · choose agent ]"
 	lines[3] = " " + plain(f.message)
 	inner := max(20, m.width-8)
@@ -132,7 +135,7 @@ func (m Model) formView() string {
 		lines[7] = nameLine
 	}
 	lines[8] = " └" + strings.Repeat("─", inner+2) + "┘"
-	lines[9] = muted.Render(" WHAT SHOULD THIS MCP DO?")
+	lines[9] = muted.Render(" OPTIONAL DETAILS")
 	lines[10] = " ┌" + strings.Repeat("─", inner+2) + "┐"
 	requestLines := wrapRequest(plain(f.request), inner)
 	visible := max(2, m.height-16)
@@ -155,7 +158,7 @@ func (m Model) formView() string {
 	bottom := 11 + visible
 	lines[bottom] = " └" + strings.Repeat("─", inner+2) + "┘"
 	lines[m.height-4] = muted.Render(" NEXT  Choose a planner agent, review its sources and setup steps, then approve.")
-	lines[m.height-3] = muted.Render(" Tab: switch field   Enter: next line   Ctrl+U: clear   Esc: cancel")
+	lines[m.height-3] = muted.Render(" Enter: continue from name   Tab: optional details   Ctrl+U: clear   Esc: cancel")
 	lines[m.height-2] = muted.Render(" Ctrl+S: continue  ·  Request is sent to the planner; secrets are entered later.")
 	for i, line := range lines {
 		lines[i] = ansi.Truncate(line, m.width, "")

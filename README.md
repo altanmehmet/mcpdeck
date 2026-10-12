@@ -11,7 +11,7 @@ If you use several coding agents, their MCP configuration and personal rules can
 MCPDeck provides one terminal panel to discover, install, enable, disable, update and remove
 MCP servers, and distribute shared instructions while preserving existing personal text.
 
-- **Natural-language installation:** enter an MCP name and describe what you need. A connected
+- **Natural-language installation:** enter an MCP name; connection details are optional. A connected
   planning agent researches a recipe; you review its commands before execution.
 - **Multiple agents:** synchronize supported configuration formats, inspect existing MCPs,
   and remove externally configured entries with backups and change checks.
@@ -19,6 +19,14 @@ MCP servers, and distribute shared instructions while preserving existing person
   shared text. Project instructions retain their scope.
 - **Recovery:** inspect partial sync failures, retry failed targets, and restore backups.
 - **Terminal controls:** mouse and keyboard navigation, configurable shortcuts, and clipboard support.
+
+## Current CLI release
+
+The binary distribution is **0.1.0-alpha.5**. Homebrew and the Windows bootstrap
+pin the same release with platform-specific checksums. This release includes
+name-only MCP installation, detected planner selection, empty configuration
+initialization and instruction editor navigation fixes.
+[Release notes and packages](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.5).
 
 ## Install
 
@@ -60,15 +68,16 @@ mcpdeck
 ## First run
 
 1. Open `mcpdeck`. It detects known agent configuration locations.
-2. Choose **New MCP** (`n`), enter a name and describe the connection you want.
-3. Select an available planner: Codex, Claude, Gemini, or a supported API provider.
+2. Choose **New MCP** (`n`), enter a name and press Enter. Connection details are optional.
+3. Choose a detected Codex, Claude or Gemini planner from the list with arrow keys or a click. A saved API provider is also available.
 4. Review sources, commands and target agents. Approve with `y` when satisfied.
 5. Enter private connection values only in the hidden input prompts.
 6. MCPDeck installs the recipe, checks MCP initialize/tool discovery, then syncs settings.
    Start a new agent session to load the configuration; account/tool access needs a real tool call.
 
 Choose **Instructions** (`g`) to manage shared personal rules. `Ctrl+S` reviews changes;
-press it again to save and distribute. **Existing** opens current global files;
+press it again to save, distribute and return to the main panel. Back/Esc closes
+the editor and discards unsaved drafts. **Existing** opens current global files;
 **Add one** appends a rule without replacing earlier shared guidance.
 
 Interactive installation and repair use a dedicated terminal conversation: a fixed
