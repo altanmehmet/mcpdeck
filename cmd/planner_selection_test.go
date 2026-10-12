@@ -52,3 +52,14 @@ func TestDetectedPlannerListExcludesMissingAndPreservesConfiguredModel(t *testin
 		t.Fatal("free-text provider accepted")
 	}
 }
+
+func TestPlannerModelSelection(t *testing.T) {
+	for _, tc := range []struct{ input, want string }{{"\n", "saved-model"}, {"chosen-model\n", "chosen-model"}, {"/default\n", ""}, {"invalid model\nvalid-model\n", "valid-model"}} {
+		c := &cobra.Command{}
+		c.SetOut(&bytes.Buffer{})
+		option, err := choosePlannerModel(c, bufio.NewReader(strings.NewReader(tc.input)), install.PlannerOptions{Provider: "copilot", Model: "saved-model"})
+		if err != nil || option.Model != tc.want {
+			t.Fatal(option, err)
+		}
+	}
+}

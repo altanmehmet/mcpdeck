@@ -7,9 +7,11 @@ import (
 
 	"github.com/altanmehmet/mcpdeck/internal/model"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	"github.com/altanmehmet/mcpdeck/internal/testutil"
 )
 
 func TestDoctorOnlyRequiresEnabledExecutables(t *testing.T) {
+	testutil.SetHome(t, t.TempDir())
 	t.Setenv("PATH", t.TempDir())
 	dir := t.TempDir()
 	s := store.Store{Path: filepath.Join(dir, "deck.json")}

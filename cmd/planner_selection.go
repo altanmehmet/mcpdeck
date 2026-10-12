@@ -15,7 +15,7 @@ import (
 // Detection checks executable availability, not whether an account is signed in.
 func detectedPlanners(saved install.PlannerOptions) []install.PlannerOptions {
 	var options []install.PlannerOptions
-	for _, provider := range []string{"codex", "claude", "gemini"} {
+	for _, provider := range []string{"codex", "claude", "gemini", "copilot"} {
 		option := install.PlannerOptions{Provider: provider}
 		if saved.Provider == provider {
 			option = saved
@@ -24,10 +24,8 @@ func detectedPlanners(saved install.PlannerOptions) []install.PlannerOptions {
 		var err error
 		if option.Executable != "" {
 			path, err = exec.LookPath(option.Executable)
-		} else if provider == "codex" {
-			path, err = install.CodexPath()
 		} else {
-			path, err = exec.LookPath(provider)
+			path, err = install.PlannerPath(provider)
 		}
 		if err == nil {
 			option.Executable = path
@@ -44,7 +42,7 @@ func detectedPlanners(saved install.PlannerOptions) []install.PlannerOptions {
 func chooseDetectedPlanner(c *cobra.Command, input *bufio.Reader, saved install.PlannerOptions) (install.PlannerOptions, error) {
 	options := detectedPlanners(saved)
 	if len(options) == 0 {
-		return saved, fmt.Errorf("no planning agents detected; install Codex, Claude or Gemini CLI and sign in, or configure an API with mcpdeck planner set")
+		return saved, fmt.Errorf("no planning agents detected; install Codex, Claude, Gemini or Copilot CLI and sign in, or configure an API with mcpdeck planner set")
 	}
 	labels := make([]string, len(options))
 	initial := 0
@@ -87,4 +85,38 @@ func chooseDetectedPlanner(c *cobra.Command, input *bufio.Reader, saved install.
 		}
 		fmt.Fprintln(c.OutOrStdout(), "Select a number from the list.")
 	}
+}
+
+func choosePlannerModel(c *cobra.Command, input *bufio.Reader, option install.PlannerOptions) (install.PlannerOptions, error) {
+	current := option.Model
+	if current == "" {
+		current = "CLI default"
+	}
+	for {
+		fmt.Fprintf(c.OutOrStdout(), "Model for %s (Enter keeps %s; /default resets; or enter model ID): ", option.Provider, current)
+		value, err := input.ReadString('\n')
+		if err != nil {
+			return option, err
+		}
+		value = strings.TrimSpace(value)
+		if value == "" {
+			break
+		}
+		if value == "/default" {
+			option.Model = ""
+			break
+		}
+		if len(value) > 256 || strings.ContainsAny(value, " \t\r\n\x00") {
+			fmt.Fprintln(c.OutOrStdout(), "Enter a model ID without spaces, up to 256 bytes.")
+			continue
+		}
+		option.Model = value
+		break
+	}
+	selected := option.Model
+	if selected == "" {
+		selected = "CLI default"
+	}
+	fmt.Fprintf(c.OutOrStdout(), "Selected model: %s\n", safeText(selected))
+	return option, nil
 }
