@@ -346,7 +346,10 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlU:
 			*input = nil
 			m.cursor = 0
-		case tea.KeyRunes:
+		case tea.KeyRunes, tea.KeySpace:
+			if msg.Type == tea.KeySpace {
+				msg.Runes = []rune{' '}
+			}
 			if len(*input)+len(msg.Runes) <= 32*1024 {
 				clean := []rune(strings.Map(func(r rune) rune {
 					if unicode.IsControl(r) {

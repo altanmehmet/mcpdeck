@@ -34,6 +34,7 @@ mcpdeck install --plan plan.json
 | `codex` | Kurulu Codex CLI oturumu (mevcut varsayılan) | CLI oturumu |
 | `claude` | Kurulu Claude Code oturumu | CLI oturumu veya `ANTHROPIC_API_KEY` |
 | `gemini` | Kurulu Gemini CLI oturumu | CLI oturumu veya `GEMINI_API_KEY` / `GOOGLE_API_KEY` |
+| `copilot` | Kurulu Copilot CLI oturumu; toolsuz planlama | Mevcut Copilot girişi veya token ortam değişkeni |
 | `openai-api` | OpenAI Responses API | `OPENAI_API_KEY` |
 | `anthropic-api` | Anthropic Messages API | `ANTHROPIC_API_KEY` |
 | `gemini-api` | Gemini generateContent API | `GEMINI_API_KEY` |
@@ -49,7 +50,9 @@ mcpdeck planner set --provider anthropic-api --model MODEL_ID
 mcpdeck install 'resmi dokümantasyon URL'
 ```
 
-Panelden **Install MCP** seçildiğinde sağlayıcı adı sorulur; Enter kayıtlı seçimi kullanır.
+Panelden kurulum açıldığında algılanan CLI ajanları listelenir. Seçimden sonra
+CLI modeli sorulur; Enter kayıtlı modeli veya CLI varsayılanını korur. Sohbette
+`/model MODEL_ID` ile sonraki yanıtların modelini değiştirebilirsiniz.
 API model adı eksikse sorulur. Anahtar ortamda yoksa gizli giriş alanından alınır;
 bu anahtar yalnızca o işlem için kullanılır. `planner set` seçimi `deck.json`
 yanındaki `planner.json` dosyasına kaydeder; anahtarın kendisini kaydetmez.

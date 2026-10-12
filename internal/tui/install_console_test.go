@@ -181,3 +181,29 @@ func TestPlannerChoicesUseKeyboardAndMouseWithoutFreeText(t *testing.T) {
 		}
 	}
 }
+
+func TestInstallConsoleSpaceKeyInChatAndPrivateInput(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		m := NewInstallConsole(nil, make(chan struct{}), func(string, bool) {}, func() {}, "Fixture")
+		m = consoleUpdate(m, ConsoleEvent{Kind: "await", Text: "You ›", Secret: secret})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("one")})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeySpace})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("two")})
+		value := m.draft
+		if secret {
+			value = m.private
+		}
+		if string(value) != "one two" {
+			t.Fatalf("space lost: %q", string(value))
+		}
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyLeft})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeySpace})
+		value = m.draft
+		if secret {
+			value = m.private
+		}
+		if string(value) != "one tw o" {
+			t.Fatal("space did not insert at cursor")
+		}
+	}
+}

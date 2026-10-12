@@ -64,3 +64,20 @@ The PTY test uses a controlled planner and local MCP fixture under a temporary
 HOME. It checks chat revision/retry, explicit approval, private input isolation,
 actual setup/probe/sync, narrow repair, resizing, mouse approval and cancellation.
 It does not use a provider account or change real agent configurations.
+
+## Ajan ve model seçimi
+
+Kurulum ve onarım başında algılanan Codex, Claude, Gemini ve Copilot CLI arasından
+seçim yapılır. PATH önceliklidir; kullanıcı bin, NVM ve platforma özgü yaygın
+kurulum yolları da kontrol edilir. Web/IDE hesabı tek başına CLI kurulumu değildir.
+
+CLI model sorusunda Enter mevcut MCPDeck modelini veya CLI varsayılanını korur.
+Bir model ID girerek değiştirebilir, `/default` ile CLI varsayılanına dönebilirsiniz.
+`--model` verilmişse bu soru atlanır ve seçim ajan değişse de korunur.
+Sohbet içinde `/model MODEL_ID` sonraki yanıtların modelini değiştirir; `/model`
+mevcut seçimi gösterir. Model değişikliği mevcut kurulum planını çalıştırmaz.
+Modellerin hesabınızda erişilebilir olması gerekir; uygulama sabit model adları uydurmaz.
+
+Copilot planlayıcısı toolsuz çalışır; canlı web araştırması yapmaz. Resmî doküman
+metnini gerektiğinde `--docs` ile sağlayın. Dönen JSON doğrulanır ve kurulum yine
+ayrı plan incelemesi/onay gerektirir. Asıl Copilot MCP ve talimat dosyaları değiştirilmez.

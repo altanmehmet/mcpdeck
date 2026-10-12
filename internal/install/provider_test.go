@@ -136,13 +136,25 @@ func TestPlannerValidation(t *testing.T) {
 	}
 }
 func TestClaudeAndGeminiCLIProtocol(t *testing.T) {
-	for _, provider := range []string{"claude", "gemini"} {
+	for _, provider := range []string{"claude", "gemini", "copilot"} {
 		t.Run(provider, func(t *testing.T) {
+			if provider == "copilot" {
+				home := t.TempDir()
+				t.Setenv("COPILOT_HOME", home)
+				if err := os.WriteFile(filepath.Join(home, "config.json"), []byte(`{"fixture_login":"metadata"}`), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(home, "mcp-config.json"), []byte(`{"mcpServers":{"private":{}}}`), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			dir := t.TempDir()
 			exe := filepath.Join(dir, "planner-fixture")
 			raw, _ := json.Marshal(recipe())
 			var envelope []byte
-			if provider == "claude" {
+			if provider == "copilot" {
+				envelope = raw
+			} else if provider == "claude" {
 				envelope, _ = json.Marshal(map[string]any{"structured_output": json.RawMessage(raw), "is_error": false})
 			} else {
 				envelope, _ = json.Marshal(map[string]string{"response": string(raw)})
@@ -153,6 +165,11 @@ case " $* " in *" --model fixture-model "*) ;; *) exit 5 ;; esac
 cat >/dev/null
 cat <<'RESULT'
 ` + string(envelope) + "\nRESULT\n"
+			if provider == "copilot" {
+				script = strings.Replace(script, "cat >/dev/null", `test ! -f "$COPILOT_HOME/mcp-config.json" || exit 6
+ grep -q fixture_login "$COPILOT_HOME/config.json" || exit 7
+ cat >/dev/null`, 1)
+			}
 			if err := os.WriteFile(exe, []byte(script), 0700); err != nil {
 				t.Fatal(err)
 			}

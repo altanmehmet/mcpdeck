@@ -94,6 +94,14 @@ func repairCommand(get func() store.Store) *cobra.Command {
 				return err
 			}
 		}
+		if c.Flags().Changed("model") {
+			opts.Model = plannerModel
+		} else if interactive && !opts.IsAPI() {
+			opts, err = choosePlannerModel(c, input, opts)
+			if err != nil {
+				return err
+			}
+		}
 		if interactive && opts.IsAPI() && opts.Model == "" {
 			fmt.Fprint(c.OutOrStdout(), "Model name: ")
 			v, e := input.ReadString('\n')
