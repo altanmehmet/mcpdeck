@@ -51,8 +51,17 @@ jobs:
           go-version: stable
           cache: true
       - run: go test ./...
+      - name: Verify Windows OS vault with a disposable credential
+        if: runner.os == 'Windows'
+        env:
+          MCPDECK_TEST_OS_VAULT: '1'
+        run: go test ./internal/vault -run TestNativeVault -v
       - run: go vet ./...
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - name: Verify Windows vault runtime and reference-only sync
+        run: |
+          go build -o vault-test.exe .
+          python tests/vault_smoke.py ./vault-test.exe
       - run: ./scripts/package-windows.ps1 -Version 0.1.0-windows-ci
       - run: python tests/windows_smoke.py dist/mcpdeck-windows-amd64.zip
       - uses: actions/upload-artifact@v4
@@ -76,8 +85,17 @@ jobs:
           if ((go env GOARCH) -ne 'arm64') { throw 'Expected a native ARM64 Go toolchain.' }
           if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64') { throw 'Expected a native ARM64 host.' }
       - run: go test ./...
+      - name: Verify Windows OS vault with a disposable credential
+        if: runner.os == 'Windows'
+        env:
+          MCPDECK_TEST_OS_VAULT: '1'
+        run: go test ./internal/vault -run TestNativeVault -v
       - run: go vet ./...
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - name: Verify Windows ARM64 vault runtime and reference-only sync
+        run: |
+          go build -o vault-test.exe .
+          python tests/vault_smoke.py ./vault-test.exe
       - run: ./scripts/package-windows.ps1 -Architecture arm64 -Version 0.1.0-windows-ci
       - run: python tests/windows_smoke.py dist/mcpdeck-windows-arm64.zip
       - uses: actions/upload-artifact@v4

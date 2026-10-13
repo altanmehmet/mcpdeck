@@ -26,7 +26,7 @@ import (
 // connection active until the revised recipe has been installed and probed.
 func repairCommand(get func() store.Store) *cobra.Command {
 	var provider, planner, plannerModel, baseURL, keyEnv, approval string
-	var valuesStdin, wait bool
+	var valuesStdin, wait, useVault bool
 	c := &cobra.Command{Use: "repair <mcp-name> [problem description]", Aliases: []string{"update"}, Short: "Diagnose, repair and update an existing MCP with an agent", Args: cobra.RangeArgs(1, 2)}
 	c.RunE = func(c *cobra.Command, args []string) (runErr error) {
 		input := bufio.NewReader(installInput(c))
@@ -190,6 +190,7 @@ func repairCommand(get func() store.Store) *cobra.Command {
 		if approval != generated.Digest() {
 			return fmt.Errorf("plan changed or approval invalid")
 		}
+		fmt.Fprintln(c.OutOrStdout(), privateInputNotice)
 		values := map[string]string{}
 		for k, v := range old.Variables {
 			values[k] = v
@@ -225,6 +226,12 @@ func repairCommand(get func() store.Store) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if useVault {
+			if err = protectInputs(s, name, &item.Server); err != nil {
+				return err
+			}
+		}
+
 		resolved, err = model.Resolve(item.Server)
 		if err != nil {
 			return err
@@ -269,6 +276,7 @@ func repairCommand(get func() store.Store) *cobra.Command {
 	c.Flags().StringVar(&baseURL, "base-url", "", "OpenAI-compatible API base URL")
 	c.Flags().StringVar(&keyEnv, "key-env", "", "API key environment variable name")
 	c.Flags().StringVar(&approval, "approve", "", "Approve the exact SHA-256 plan digest")
+	c.Flags().BoolVar(&useVault, "vault", false, "Store private input values in the OS vault; sync only local runtime references")
 	c.Flags().BoolVar(&valuesStdin, "values-stdin", false, "Read private inputs as a JSON object from stdin")
 	c.Flags().BoolVar(&wait, "wait", false, "Wait for Enter before returning")
 	var plain bool

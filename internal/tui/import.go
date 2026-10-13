@@ -12,12 +12,17 @@ import (
 type importForm struct {
 	name, request, message string
 	field                  int
+	vault                  bool
 }
 
 func (m Model) updateForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 	f := m.form
 	if mouse, ok := msg.(tea.MouseMsg); ok {
 		if mouse.Action != tea.MouseActionPress || mouse.Button != tea.MouseButtonLeft {
+			return m, nil
+		}
+		if mouse.Y == m.height-4 {
+			f.vault = !f.vault
 			return m, nil
 		}
 		if mouse.Y == 2 {
@@ -45,6 +50,9 @@ func (m Model) updateForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "esc":
 		m.form = nil
+		return m, nil
+	case "ctrl+k":
+		f.vault = !f.vault
 		return m, nil
 	case "ctrl+s":
 		return m.startAgenticAdd()
@@ -157,7 +165,11 @@ func (m Model) formView() string {
 	}
 	bottom := 11 + visible
 	lines[bottom] = " └" + strings.Repeat("─", inner+2) + "┘"
-	lines[m.height-4] = muted.Render(" NEXT  Choose a planner agent, review its sources and setup steps, then approve.")
+	vaultLabel := "off (existing storage)"
+	if f.vault {
+		vaultLabel = "on (OS credential store)"
+	}
+	lines[m.height-4] = muted.Render(" OS VAULT: " + vaultLabel + " · Ctrl+K or click to toggle")
 	lines[m.height-3] = muted.Render(" Enter: continue from name   Tab: optional details   Ctrl+U: clear   Esc: cancel")
 	lines[m.height-2] = muted.Render(" Ctrl+S: continue  ·  Request is sent to the planner; secrets are entered later.")
 	for i, line := range lines {

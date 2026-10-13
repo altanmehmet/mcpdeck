@@ -128,3 +128,5 @@ Do not post tokens, passwords, private connection values or complete personal co
 Use GitHub private vulnerability reporting for security issues.
 
 Licensed under [MIT](LICENSE). Binary packages also include third-party license notices.
+
+Private credentials: [OS vault setup and limitations](docs/VAULT.md) (`mcpdeck install "your MCP request" --vault`).
