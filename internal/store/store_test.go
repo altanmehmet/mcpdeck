@@ -5,6 +5,7 @@ import (
 	"github.com/altanmehmet/mcpdeck/internal/testutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -144,5 +145,31 @@ func TestInvalidConfigPreserved(t *testing.T) {
 	_ = os.WriteFile(s.Path, []byte(`broken`), 0600)
 	if err := s.Save(Defaults()); err == nil {
 		t.Fatal("overwrote corrupt config")
+	}
+}
+
+func TestAntigravityDetectedFromStandaloneAgy(t *testing.T) {
+	home := t.TempDir()
+	testutil.SetHome(t, home)
+	t.Setenv("PATH", t.TempDir())
+	path := filepath.Join(home, ".local", "bin", "agy")
+	if runtime.GOOS == "windows" {
+		base := filepath.Join(home, "AppData", "Local")
+		t.Setenv("LOCALAPPDATA", base)
+		path = filepath.Join(base, "agy", "bin", "agy.exe")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("fixture"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	profile := DefaultProfiles()["antigravity"]
+	if !IsInstalledAgent("antigravity", profile) {
+		t.Fatal("agy installation not detected")
+	}
+	profile.TargetPath = filepath.Join(home, "custom.json")
+	if IsInstalledAgent("antigravity", profile) {
+		t.Fatal("custom target auto-selected")
 	}
 }

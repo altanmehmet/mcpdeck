@@ -46,11 +46,11 @@ mcpdeck
 
 The public formula downloads a versioned archive with a pinned SHA-256 checksum.
 It requires neither source repository access nor Go. The current published version
-is `0.1.0-alpha.6`; installing through Homebrew does not make it a stable release.
+is `0.1.0-alpha.7`; installing through Homebrew does not make it a stable release.
 Homebrew checks the archive checksum; it does not independently validate the
 OpenSSH publisher signature. Manual signature verification is described below.
 
-[Alpha packages and release notes](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.6).
+[Alpha packages and release notes](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.7).
 Actual macOS arm64 Homebrew installation and `brew test` passed. Public binary CI
 also verified signatures and ran native installers on its macOS/Linux runners.
 

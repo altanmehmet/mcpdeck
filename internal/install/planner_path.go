@@ -36,6 +36,9 @@ func PlannerPath(name string) (string, error) {
 	if runtime.GOOS == "windows" && os.Getenv("APPDATA") != "" {
 		roots = append(roots, filepath.Join(os.Getenv("APPDATA"), "npm"))
 	}
+	if runtime.GOOS == "windows" && name == "agy" && os.Getenv("LOCALAPPDATA") != "" {
+		roots = append(roots, filepath.Join(os.Getenv("LOCALAPPDATA"), "agy", "bin"))
+	}
 	names := []string{name}
 	if runtime.GOOS == "windows" {
 		names = append(names, name+".exe", name+".cmd", name+".bat")
