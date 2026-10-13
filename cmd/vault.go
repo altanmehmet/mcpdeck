@@ -71,6 +71,9 @@ func vaultCommand(get func() store.Store) *cobra.Command {
 			if err := latest.CheckVaultInput(key); err != nil {
 				return err
 			}
+			if currentValue, exists := latest.Variables[key]; !exists || currentValue != cfg.Variables[key] {
+				return fmt.Errorf("input binding changed during vault save; retry with the current deck")
+			}
 			if latest.Variables == nil {
 				latest.Variables = map[string]string{}
 			}

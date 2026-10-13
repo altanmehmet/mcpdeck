@@ -3,6 +3,7 @@
 package vault
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -33,7 +34,15 @@ func readSecret(id string) ([]byte, error) {
 }
 func writeSecret(id string, value []byte) error {
 	_, err := secretTool([]string{"store", "--label=MCPDeck credential", "application", "mcpdeck", "key", id}, string(value))
-	return err
+	if err != nil {
+		return err
+	}
+	saved, err := readSecret(id)
+	if err != nil || !bytes.Equal(saved, value) {
+		_ = deleteSecret(id)
+		return fmt.Errorf("Secret Service did not save the exact credential; no plaintext fallback")
+	}
+	return nil
 }
 
 func deleteSecret(id string) error {
