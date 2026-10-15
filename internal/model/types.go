@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"github.com/altanmehmet/mcpdeck/internal/vault"
+	"net"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -168,6 +170,11 @@ func expandWith(s string, values map[string]string) (string, error) {
 	return result, nil
 }
 func Resolve(s ServerConfig) (ServerConfig, error) {
+	if s.HasVault() {
+		if err := s.CheckVaultTransport(); err != nil {
+			return ServerConfig{}, err
+		}
+	}
 	for key, value := range s.Variables {
 		if vault.IsReference(value) {
 			if err := s.CheckVaultInput(key); err != nil {
@@ -230,4 +237,26 @@ func (s ServerConfig) CheckVaultInput(key string) error {
 		}
 	}
 	return nil
+}
+
+// CheckVaultTransport prevents OS-vault credentials from being sent over public
+// plaintext HTTP. Loopback endpoints remain usable for local MCP services.
+func (s ServerConfig) CheckVaultTransport() error {
+	if s.URL == "" {
+		return nil
+	}
+	u, err := url.Parse(s.URL)
+	if err == nil && u.Scheme == "https" {
+		return nil
+	}
+	if err == nil && u.Scheme == "http" {
+		host := u.Hostname()
+		if host == "localhost" {
+			return nil
+		}
+		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+			return nil
+		}
+	}
+	return fmt.Errorf("vault credentials require HTTPS for remote MCP endpoints; HTTP is allowed only for localhost or loopback IPs")
 }

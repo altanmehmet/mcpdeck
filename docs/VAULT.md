@@ -14,6 +14,8 @@ Planning, chat and approval finish before private inputs are collected. MCPDeck 
 
 Deck variables contain `vault://<opaque-id>` references. Direct sync writes a per-server `mcpdeck vault exec <server>` wrapper into agent settings instead of resolved credentials. The wrapper retrieves credentials locally at runtime; it forwards the MCP's stdio protocol without changing tool names. Remote connections use the existing pinned MCPDeck stdio adapter. Bridge mode also resolves credentials locally. Existing connections and the default install behavior remain compatible; vault storage is opt-in.
 
+Vault credentials require HTTPS for remote MCP endpoints. Plain HTTP is allowed only for `localhost` and literal loopback IP addresses, so local MCP services remain usable. Credentials must not cross a network in plaintext ([OWASP guidance](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html#28-transport-layer-security-tls-everywhere)).
+
 Vault inputs must appear in environment values or HTTP headers. Secrets in executable names, arguments or URLs are rejected because those can expose them through process listings. Recipes using password arguments need a documented environment/header connection before vault installation can proceed.
 
 ## Existing installations

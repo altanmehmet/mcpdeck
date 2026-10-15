@@ -60,3 +60,13 @@ func TestVaultCLIRejectsUnboundVariableWithoutReadingSecret(t *testing.T) {
 		t.Fatal("secret leaked")
 	}
 }
+
+func TestVaultProtectionRejectsInsecureTransportBeforeSaving(t *testing.T) {
+	cfg := model.ServerConfig{URL: "http://example.com/mcp", Headers: map[string]string{"Authorization": "${TOKEN}"}, Variables: map[string]string{"TOKEN": "fixture-never-store"}}
+	if err := protectInputs(store.Store{Path: "unused"}, "demo", &cfg); err == nil {
+		t.Fatal("insecure remote transport accepted")
+	}
+	if cfg.Variables["TOKEN"] != "fixture-never-store" {
+		t.Fatal("credential modified before rejecting transport")
+	}
+}

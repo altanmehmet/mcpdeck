@@ -39,3 +39,10 @@ func TestVaultArgumentRejectedBeforeSync(t *testing.T) {
 		t.Fatal("vault secret allowed in argv")
 	}
 }
+
+func TestVaultSyncRejectsInsecureTransportWithoutReadingVault(t *testing.T) {
+	d := &model.Deck{Servers: map[string]model.ServerConfig{"private": {URL: "http://example.com/mcp", Headers: map[string]string{"Authorization": "${TOKEN}"}, Variables: map[string]string{"TOKEN": vault.Reference("fixture-never-read")}}}, Profiles: map[string]model.ProfileConfig{"test": {EnabledServers: []string{"private"}}}}
+	if _, err := (Syncer{Deck: d}).render("test", false, nil); err == nil {
+		t.Fatal("insecure remote transport synced")
+	}
+}

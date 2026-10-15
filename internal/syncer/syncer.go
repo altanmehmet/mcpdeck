@@ -81,6 +81,9 @@ func (s Syncer) render(key string, bridge bool, b []byte) ([]byte, error) {
 				return nil, fmt.Errorf("unknown server %s", name)
 			}
 			if cfg.HasVault() {
+				if err = cfg.CheckVaultTransport(); err != nil {
+					return nil, err
+				}
 				for variable := range cfg.Variables {
 					if vault.IsReference(cfg.Variables[variable]) {
 						if err = cfg.CheckVaultInput(variable); err != nil {

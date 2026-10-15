@@ -32,6 +32,9 @@ func vaultCommand(get func() store.Store) *cobra.Command {
 		if !ok {
 			return fmt.Errorf("unknown MCP")
 		}
+		if err = cfg.CheckVaultTransport(); err != nil {
+			return err
+		}
 		key := args[1]
 		if !model.NamePattern.MatchString(key) {
 			return fmt.Errorf("invalid variable name")
@@ -147,6 +150,9 @@ func vaultCommand(get func() store.Store) *cobra.Command {
 
 // protectInputs is called only after planning/chat/approval have finished.
 func protectInputs(s store.Store, name string, cfg *model.ServerConfig) error {
+	if err := cfg.CheckVaultTransport(); err != nil {
+		return err
+	}
 	if cfg.Variables == nil {
 		cfg.Variables = map[string]string{}
 	}
