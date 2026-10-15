@@ -183,3 +183,7 @@ calls Sentry `whoami`. It preserves existing configurations and does not print
 account payloads. The explicit connection option additionally runs only
 `SELECT 1 AS MCPDECK_HEALTH FROM DUAL` and disconnects its own SQLcl session.
 Existing Sentry authorization does not prove first-time OAuth login or refresh.
+
+## Security toolchain
+
+Use the patched compiler selected by the `toolchain` directive in `go.mod` (currently Go 1.27.2 or newer). The language minimum remains Go 1.24. Build with automatic toolchain selection enabled, and run `govulncheck` before publishing: source changes alone do not patch existing release binaries. A source build with `GOTOOLCHAIN=local` can bypass the recommendation and must not be used for release builds with an older unpatched compiler.

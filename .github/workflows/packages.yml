@@ -25,6 +25,8 @@ jobs:
         with:
           go-version: stable
           cache: true
+      - name: Check vulnerabilities before packaging
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
       - name: Build snapshot archive
         env:
           GOOS: ${{ matrix.os }}
@@ -57,6 +59,8 @@ jobs:
         with:
           go-version: stable
           cache: true
+      - name: Check vulnerabilities before packaging
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
       - name: Build Windows archive
         env:
           REQUESTED_VERSION: ${{ inputs.version }}

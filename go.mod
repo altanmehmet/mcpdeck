@@ -2,6 +2,8 @@ module github.com/altanmehmet/mcpdeck
 
 go 1.24.0
 
+toolchain go1.27.2
+
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/charmbracelet/bubbletea v1.3.10
