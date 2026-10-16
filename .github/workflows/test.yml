@@ -64,7 +64,7 @@ jobs:
           python tests/vault_smoke.py ./vault-test.exe
       - run: ./scripts/package-windows.ps1 -Version 0.1.0-windows-ci
       - run: python tests/windows_smoke.py dist/mcpdeck-windows-amd64.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-native-package
           path: dist/*
@@ -98,7 +98,7 @@ jobs:
           python tests/vault_smoke.py ./vault-test.exe
       - run: ./scripts/package-windows.ps1 -Architecture arm64 -Version 0.1.0-windows-ci
       - run: python tests/windows_smoke.py dist/mcpdeck-windows-arm64.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-arm64-native-package
           path: dist/*
