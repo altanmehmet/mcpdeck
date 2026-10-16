@@ -2,6 +2,9 @@ package model
 
 import (
 	"fmt"
+	"github.com/altanmehmet/mcpdeck/internal/vault"
+	"net"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -145,6 +148,14 @@ func expandWith(s string, values map[string]string) (string, error) {
 	var missing string
 	result := os.Expand(s, func(k string) string {
 		v, ok := values[k]
+		if ok && vault.IsReference(v) {
+			var err error
+			v, err = vault.Get(v)
+			if err != nil {
+				missing = k
+				return ""
+			}
+		}
 		if !ok {
 			v, ok = os.LookupEnv(k)
 		}
@@ -159,6 +170,19 @@ func expandWith(s string, values map[string]string) (string, error) {
 	return result, nil
 }
 func Resolve(s ServerConfig) (ServerConfig, error) {
+	if s.HasVault() {
+		if err := s.CheckVaultTransport(); err != nil {
+			return ServerConfig{}, err
+		}
+	}
+	for key, value := range s.Variables {
+		if vault.IsReference(value) {
+			if err := s.CheckVaultInput(key); err != nil {
+				return ServerConfig{}, err
+			}
+		}
+	}
+
 	r := ServerConfig{Command: s.Command, URL: s.URL, Transport: s.Transport, Headers: map[string]string{}, Args: make([]string, len(s.Args)), Env: map[string]string{}}
 	var err error
 	if s.URL != "" {
@@ -192,4 +216,47 @@ func Resolve(s ServerConfig) (ServerConfig, error) {
 		}
 	}
 	return r, nil
+}
+
+// HasVault prevents sync from resolving private values into agent config files.
+func (s ServerConfig) HasVault() bool {
+	for _, value := range s.Variables {
+		if vault.IsReference(value) {
+			return true
+		}
+	}
+	return false
+}
+
+// CheckVaultInput prohibits vault secrets in URLs or process argument lists.
+func (s ServerConfig) CheckVaultInput(key string) error {
+	for _, value := range append([]string{s.Command, s.URL}, s.Args...) {
+		reference := regexp.MustCompile(`\$\{` + regexp.QuoteMeta(key) + `\}|\$` + regexp.QuoteMeta(key) + `(?:[^A-Za-z0-9_]|$)`)
+		if reference.MatchString(value) {
+			return fmt.Errorf("vault inputs must use environment variables or HTTP headers, not executable, URL or arguments")
+		}
+	}
+	return nil
+}
+
+// CheckVaultTransport prevents OS-vault credentials from being sent over public
+// plaintext HTTP. Loopback endpoints remain usable for local MCP services.
+func (s ServerConfig) CheckVaultTransport() error {
+	if s.URL == "" {
+		return nil
+	}
+	u, err := url.Parse(s.URL)
+	if err == nil && u.Scheme == "https" {
+		return nil
+	}
+	if err == nil && u.Scheme == "http" {
+		host := u.Hostname()
+		if host == "localhost" {
+			return nil
+		}
+		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+			return nil
+		}
+	}
+	return fmt.Errorf("vault credentials require HTTPS for remote MCP endpoints; HTTP is allowed only for localhost or loopback IPs")
 }

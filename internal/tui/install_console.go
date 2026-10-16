@@ -201,8 +201,16 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.listen()
 	case tea.MouseMsg:
+		if m.waiting && len(m.choices) > 0 && (msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown) {
+			if msg.Button == tea.MouseButtonWheelUp {
+				m.choice = max(0, m.choice-1)
+			} else {
+				m.choice = min(len(m.choices)-1, m.choice+1)
+			}
+			return m, nil
+		}
 		if m.waiting && len(m.choices) > 0 && msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft && msg.Y >= 7 && msg.Y < 7+len(m.choices) && msg.Y < m.height-5 {
-			index := msg.Y - 7
+			index := m.choiceStart() + msg.Y - 7
 			cmd := m.selectChoice(index)
 			return m, cmd
 		}
@@ -346,7 +354,10 @@ func (m InstallConsole) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlU:
 			*input = nil
 			m.cursor = 0
-		case tea.KeyRunes:
+		case tea.KeyRunes, tea.KeySpace:
+			if msg.Type == tea.KeySpace {
+				msg.Runes = []rune{' '}
+			}
 			if len(*input)+len(msg.Runes) <= 32*1024 {
 				clean := []rune(strings.Map(func(r rune) rune {
 					if unicode.IsControl(r) {
@@ -368,6 +379,10 @@ func (m *InstallConsole) selectChoice(index int) tea.Cmd {
 	command := m.send(strconv.Itoa(index), false)
 	m.entries[len(m.entries)-1].text = label
 	return command
+}
+
+func (m InstallConsole) choiceStart() int {
+	return max(0, m.choice-max(1, m.height-12)+1)
 }
 
 func (m *InstallConsole) send(text string, secret bool) tea.Cmd {
@@ -487,13 +502,19 @@ func (m InstallConsole) View() string {
 	if len(m.choices) > 0 {
 		lines[4] = title.Render(" DETECTED PLANNING AGENTS")
 		lines[5] = muted.Render(" Choose an agent. Account login is checked when planning starts.")
-		for i, label := range m.choices {
+		if strings.Contains(strings.ToLower(m.prompt), "model") {
+			lines[4] = title.Render(" AVAILABLE AGY MODELS")
+			lines[5] = muted.Render(" Models reported by the installed agy CLI. Arrow keys or click to choose.")
+		}
+		start := m.choiceStart()
+		for i := start; i < min(len(m.choices), start+max(1, height-12)); i++ {
+			label := m.choices[i]
 			value := "   " + consolePlain(label)
 			if i == m.choice {
 				value = selected.Render(" › " + consolePlain(label))
 			}
-			if 7+i < height-5 {
-				lines[7+i] = value
+			if 7+i-start < height-5 {
+				lines[7+i-start] = value
 			}
 		}
 	} else if m.help {
@@ -547,7 +568,7 @@ func (m InstallConsole) View() string {
 		lines[height-3] = " " + consolePlain(m.choices[m.choice])
 		lines[height-2] = muted.Render(" ↑/↓ choose  ·  Enter select  ·  Click an agent to select")
 	} else if m.secret {
-		lines[height-2] = muted.Render(" Private value · masked · not added to conversation")
+		lines[height-2] = muted.Render(" Private value · local MCP only · never sent to planner/chat")
 	} else {
 		lines[height-2] = muted.Render(" Enter send  ·  Ctrl+S review install  ·  F2 plan  ·  PgUp/PgDn scroll")
 	}

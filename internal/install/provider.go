@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 )
@@ -19,7 +18,7 @@ type PlannerOptions struct {
 	APIKey     string `json:"-"`
 }
 
-var Providers = []string{"codex", "claude", "gemini", "openai-api", "anthropic-api", "gemini-api", "openai-compatible"}
+var Providers = []string{"codex", "claude", "gemini", "copilot", "agy", "openai-api", "anthropic-api", "gemini-api", "openai-compatible"}
 var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 func (o PlannerOptions) Validate() error {
@@ -93,7 +92,7 @@ func PlanWith(ctx context.Context, o PlannerOptions, request string) (Plan, erro
 		if o.Provider == "codex" {
 			executable, err = CodexPath()
 		} else {
-			executable, err = exec.LookPath(o.Provider)
+			executable, err = PlannerPath(o.Provider)
 		}
 		if err != nil {
 			return Plan{}, fmt.Errorf("%s CLI not found; install and sign in, or select an API provider", o.Provider)
@@ -101,6 +100,9 @@ func PlanWith(ctx context.Context, o PlannerOptions, request string) (Plan, erro
 	}
 	if o.Provider == "codex" {
 		return generateCodex(ctx, executable, o.Model, request)
+	}
+	if o.Provider == "agy" {
+		return generateAgy(ctx, o, executable, request)
 	}
 	return generateOtherCLI(ctx, o, executable, request)
 }

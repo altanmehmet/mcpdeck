@@ -136,7 +136,8 @@ def run(binary):
                 drain()
             assert "Unsaved temporary draft" not in source.read_text()
             os.write(master, b"q")
-            wait(lambda: process.poll() is not None)
+            # Exit can occur between two poll calls; wait directly after Quit.
+            process.wait(timeout=10)
             assert process.returncode == 0
             print("PASS: real PTY natural-language form, eight-agent sync, single/all toggles, secret-safe output, removal, instructions save/back, help and exit")
         finally:

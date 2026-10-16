@@ -185,6 +185,23 @@ func IsInstalledAgent(key string, p model.ProfileConfig) bool {
 		"antigravity": "antigravity", "gemini-cli": "gemini", "opencode": "opencode", "zed": "zed",
 		"cline": "cline", "continue": "cn", "amazon-q": "q", "amazon-q-ide": "q", "kiro": "kiro-cli", "qwen-code": "qwen",
 	}
+	if key == "antigravity" {
+		// Antigravity CLI uses agy; IDE launchers may still use antigravity.
+		if _, err := exec.LookPath("agy"); err == nil {
+			return true
+		}
+		home, _ := os.UserHomeDir()
+		path := filepath.Join(home, ".local", "bin", "agy")
+		if runtime.GOOS == "windows" {
+			path = ""
+			if base := os.Getenv("LOCALAPPDATA"); base != "" {
+				path = filepath.Join(base, "agy", "bin", "agy.exe")
+			}
+		}
+		if info, err := os.Stat(path); path != "" && err == nil && !info.IsDir() && (runtime.GOOS == "windows" || info.Mode()&0111 != 0) {
+			return true
+		}
+	}
 	if binary := executables[key]; binary != "" {
 		if _, err := exec.LookPath(binary); err == nil {
 			return true

@@ -22,7 +22,7 @@ func (e *manualQuestionError) Error() string { return "manual prerequisite needs
 func reviewPlanChat(ctx context.Context, opts install.PlannerOptions, request string, p install.Plan, input *bufio.Reader, out io.Writer, targets []string, firstMessage string, generate planGenerator) (install.Plan, error) {
 	outputHeading(out, "INSTALLATION CHAT / "+opts.Provider)
 	outputParagraph(out, "Ask a question or describe a change. Software paths and versions are checked on each reply. Keep passwords and tokens for the private input prompts.")
-	fmt.Fprintln(out, "\n  Enter / /install   Continue to approval\n  /refresh           Check installed software\n  /cancel            Cancel installation")
+	fmt.Fprintln(out, "\n  Enter / /install   Continue to approval\n  /model MODEL_ID    Change model for subsequent replies\n  /refresh           Check installed software\n  /cancel            Cancel installation")
 	history := ""
 	message := firstMessage
 	for {
@@ -33,6 +33,28 @@ func reviewPlanChat(ctx context.Context, opts install.PlannerOptions, request st
 				return p, fmt.Errorf("installation review ended before approval")
 			}
 			message = strings.TrimSpace(line)
+		}
+		if message == "/model" || strings.HasPrefix(message, "/model ") {
+			value := strings.TrimSpace(strings.TrimPrefix(message, "/model"))
+			if value == "" {
+				current := opts.Model
+				if current == "" {
+					current = "CLI default"
+				}
+				fmt.Fprintf(out, "Current model: %s. Use /model MODEL_ID or /model default.\n", safeText(current))
+			} else if len(value) > 256 || strings.ContainsAny(value, " \t\r\n\x00") {
+				fmt.Fprintln(out, "Enter a model ID without spaces, up to 256 bytes.")
+			} else if value == "default" && opts.IsAPI() {
+				fmt.Fprintln(out, "API providers require an explicit model ID.")
+			} else {
+				if value == "default" {
+					value = ""
+				}
+				opts.Model = value
+				fmt.Fprintln(out, "Model changed for subsequent replies; the current recipe is unchanged.")
+			}
+			message = ""
+			continue
 		}
 		switch message {
 		case "", "/install":

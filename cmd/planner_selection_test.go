@@ -52,3 +52,26 @@ func TestDetectedPlannerListExcludesMissingAndPreservesConfiguredModel(t *testin
 		t.Fatal("free-text provider accepted")
 	}
 }
+
+func TestPlannerModelSelection(t *testing.T) {
+	for _, tc := range []struct{ input, want string }{{"\n", "saved-model"}, {"chosen-model\n", "chosen-model"}, {"/default\n", ""}, {"invalid model\nvalid-model\n", "valid-model"}} {
+		c := &cobra.Command{}
+		c.SetOut(&bytes.Buffer{})
+		option, err := choosePlannerModel(c, bufio.NewReader(strings.NewReader(tc.input)), install.PlannerOptions{Provider: "copilot", Model: "saved-model"})
+		if err != nil || option.Model != tc.want {
+			t.Fatal(option, err)
+		}
+	}
+}
+
+func TestAgyModelCatalogChoicePreservesDefaultsAndIDs(t *testing.T) {
+	models := []install.PlannerModel{{ID: "fixture-one", Label: "Model one"}, {ID: "fixture-two", Label: "Model two"}}
+	for _, tc := range []struct{ input, want string }{{"\n", "saved-model"}, {"2\n", "fixture-one"}, {"3\n", "fixture-two"}, {"4\ncustom-model\n", "custom-model"}} {
+		c := &cobra.Command{}
+		c.SetOut(&bytes.Buffer{})
+		got, err := selectAgyModel(c, bufio.NewReader(strings.NewReader(tc.input)), install.PlannerOptions{Provider: "agy", Model: "saved-model"}, models)
+		if err != nil || got.Model != tc.want {
+			t.Fatal(got, err)
+		}
+	}
+}

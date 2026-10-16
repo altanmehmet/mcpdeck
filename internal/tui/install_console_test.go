@@ -181,3 +181,47 @@ func TestPlannerChoicesUseKeyboardAndMouseWithoutFreeText(t *testing.T) {
 		}
 	}
 }
+
+func TestInstallConsoleSpaceKeyInChatAndPrivateInput(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		m := NewInstallConsole(nil, make(chan struct{}), func(string, bool) {}, func() {}, "Fixture")
+		m = consoleUpdate(m, ConsoleEvent{Kind: "await", Text: "You ›", Secret: secret})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("one")})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeySpace})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("two")})
+		value := m.draft
+		if secret {
+			value = m.private
+		}
+		if string(value) != "one two" {
+			t.Fatalf("space lost: %q", string(value))
+		}
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeyLeft})
+		m = consoleUpdate(m, tea.KeyMsg{Type: tea.KeySpace})
+		value = m.draft
+		if secret {
+			value = m.private
+		}
+		if string(value) != "one tw o" {
+			t.Fatal("space did not insert at cursor")
+		}
+	}
+}
+
+func TestModelChoicesKeepSelectedRowVisibleAndMouseAligned(t *testing.T) {
+	m := NewInstallConsole(nil, make(chan struct{}), func(string, bool) {}, func() {}, "Models")
+	m = consoleUpdate(m, tea.WindowSizeMsg{Width: 80, Height: 18})
+	choices := make([]string, 20)
+	for i := range choices {
+		choices[i] = "model-" + string(rune('a'+i))
+	}
+	m = consoleUpdate(m, ConsoleEvent{Kind: "choices", Text: "Choose a model", Choices: choices, Selected: 18})
+	if !strings.Contains(ansi.Strip(m.View()), choices[18]) {
+		t.Fatal("selected model offscreen")
+	}
+	start := m.choiceStart()
+	next, cmd := m.Update(tea.MouseMsg{X: 4, Y: 7, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	if cmd == nil || next.(InstallConsole).entries[len(next.(InstallConsole).entries)-1].text != choices[start] {
+		t.Fatal("mouse model selection uses wrong row")
+	}
+}

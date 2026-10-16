@@ -46,11 +46,11 @@ mcpdeck
 
 The public formula downloads a versioned archive with a pinned SHA-256 checksum.
 It requires neither source repository access nor Go. The current published version
-is `0.1.0-alpha.3`; installing through Homebrew does not make it a stable release.
+is `0.1.0-alpha.8`; installing through Homebrew does not make it a stable release.
 Homebrew checks the archive checksum; it does not independently validate the
 OpenSSH publisher signature. Manual signature verification is described below.
 
-[Alpha packages and release notes](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.3).
+[Alpha packages and release notes](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.8).
 Actual macOS arm64 Homebrew installation and `brew test` passed. Public binary CI
 also verified signatures and ran native installers on its macOS/Linux runners.
 
@@ -183,3 +183,7 @@ calls Sentry `whoami`. It preserves existing configurations and does not print
 account payloads. The explicit connection option additionally runs only
 `SELECT 1 AS MCPDECK_HEALTH FROM DUAL` and disconnects its own SQLcl session.
 Existing Sentry authorization does not prove first-time OAuth login or refresh.
+
+## Security toolchain
+
+Use the patched compiler selected by the `toolchain` directive in `go.mod` (currently Go 1.27.2 or newer). The language minimum remains Go 1.24. Build with automatic toolchain selection enabled, and run `govulncheck` before publishing: source changes alone do not patch existing release binaries. A source build with `GOTOOLCHAIN=local` can bypass the recommendation and must not be used for release builds with an older unpatched compiler.

@@ -59,3 +59,20 @@ func TestManualPrerequisiteQuestionReturnsToConnectedAgent(t *testing.T) {
 		t.Fatal("a question should return to the installation conversation")
 	}
 }
+
+func TestInstallChatModelSwitchIsLocalAndUsedOnNextReply(t *testing.T) {
+	p := install.Plan{Version: 1, Name: "demo", Connection: `{"command":"echo","args":[]}`}
+	var output bytes.Buffer
+	calls := 0
+	generate := func(_ context.Context, opts install.PlannerOptions, _ string, _ io.Writer, _ bool) (install.Plan, error) {
+		calls++
+		if opts.Model != "selected-model" {
+			t.Fatal("model not forwarded")
+		}
+		return p, nil
+	}
+	got, err := reviewPlanChat(context.Background(), install.PlannerOptions{Provider: "copilot"}, "demo", p, bufio.NewReader(strings.NewReader("/model selected-model\nexplain this plan\n/install\n")), &output, nil, "", generate)
+	if err != nil || calls != 1 || got.Digest() != p.Digest() {
+		t.Fatal("model command generated or changed a recipe", err)
+	}
+}

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage questions and ideas
+    url: https://github.com/altanmehmet/mcpdeck/discussions
+    about: Ask for setup help or discuss a workflow.
+  - name: Private vulnerability report
+    url: https://github.com/altanmehmet/mcpdeck/security/advisories/new
+    about: Report security issues privately, without publishing credentials.

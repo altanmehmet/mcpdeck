@@ -3,9 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"github.com/altanmehmet/mcpdeck/internal/install"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 )
@@ -47,12 +47,22 @@ func plannerCommand(get func() store.Store) *cobra.Command {
 		fmt.Fprintln(c.OutOrStdout(), "Planlayici secimi kaydedildi. API anahtari kaydedilmedi.")
 		return nil
 	}}
-	set.Flags().StringVar(&o.Provider, "provider", "codex", "codex, claude, gemini, openai-api, anthropic-api, gemini-api, openai-compatible")
+	set.Flags().StringVar(&o.Provider, "provider", "codex", "codex, claude, gemini, copilot, agy, openai-api, anthropic-api, gemini-api, openai-compatible")
 	set.Flags().StringVar(&o.Model, "model", "", "Model identifier; required for API providers")
 	set.Flags().StringVar(&o.Executable, "executable", "", "Optional CLI executable path")
 	set.Flags().StringVar(&o.BaseURL, "base-url", "", "OpenAI-compatible API base URL, including /v1 when required")
 	set.Flags().StringVar(&o.KeyEnv, "key-env", "", "Environment variable containing the API key (name only)")
 	root.AddCommand(set)
+	root.AddCommand(&cobra.Command{Use: "detected", Short: "List planning CLIs found in PATH and known install locations", Args: cobra.NoArgs, RunE: func(c *cobra.Command, _ []string) error {
+		saved, err := loadPlanner(get())
+		if err != nil {
+			return err
+		}
+		for _, option := range detectedPlanners(saved) {
+			fmt.Fprintf(c.OutOrStdout(), "%s\t%s\n", safeText(option.Provider), safeText(option.Executable))
+		}
+		return nil
+	}})
 	root.AddCommand(&cobra.Command{Use: "list", Short: "List available planner adapters", Args: cobra.NoArgs, Run: func(c *cobra.Command, _ []string) {
 		for _, name := range install.Providers {
 			fmt.Fprintln(c.OutOrStdout(), name)

@@ -26,7 +26,7 @@ func installCommand(get func() store.Store) *cobra.Command {
 	var planPath, output, approval, planner string
 	var provider, plannerModel, baseURL, keyEnv, serverName string
 	var docsPath string
-	var planOnly, valuesStdin, all, wait bool
+	var planOnly, valuesStdin, all, wait, useVault bool
 	c := &cobra.Command{Use: "install [natural-language request]", Short: "Ask an agent to find, install, verify and distribute an MCP", Args: cobra.MaximumNArgs(1)}
 	c.RunE = func(c *cobra.Command, args []string) (runErr error) {
 		input := bufio.NewReader(installInput(c))
@@ -115,6 +115,14 @@ func installCommand(get func() store.Store) *cobra.Command {
 			}
 			if interactive && !c.Flags().Changed("provider") {
 				opts, err = chooseDetectedPlanner(c, input, opts)
+				if err != nil {
+					return err
+				}
+			}
+			if c.Flags().Changed("model") {
+				opts.Model = plannerModel
+			} else if interactive && !opts.IsAPI() {
+				opts, err = choosePlannerModel(c, input, opts)
 				if err != nil {
 					return err
 				}
@@ -251,6 +259,7 @@ func installCommand(get func() store.Store) *cobra.Command {
 		if approval != p.Digest() {
 			return fmt.Errorf("plan changed or approval invalid")
 		}
+		fmt.Fprintln(c.OutOrStdout(), privateInputNotice)
 		values := map[string]string{}
 		if valuesStdin {
 			raw, e := io.ReadAll(io.LimitReader(input, 1024*1024+1))
@@ -283,6 +292,12 @@ func installCommand(get func() store.Store) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if useVault {
+			if err = protectInputs(s, p.Name, &item.Server); err != nil {
+				return err
+			}
+		}
+
 		if _, err = model.Resolve(item.Server); err != nil {
 			return err
 		}
@@ -348,6 +363,7 @@ func installCommand(get func() store.Store) *cobra.Command {
 	c.Flags().StringVar(&baseURL, "base-url", "", "OpenAI-compatible API base URL")
 	c.Flags().StringVar(&keyEnv, "key-env", "", "API key environment variable name, never the key itself")
 	c.Flags().StringVar(&docsPath, "docs", "", "Attach documentation text to the planner request (sent to the selected provider)")
+	c.Flags().BoolVar(&useVault, "vault", false, "Store private input values in the OS vault; sync only local runtime references")
 	c.Flags().BoolVar(&valuesStdin, "values-stdin", false, "Read secret input values as a JSON object from stdin; never send them to the planner")
 	c.Flags().BoolVar(&all, "all-profiles", false, "Include configured agents even when their config file does not yet exist")
 	c.Flags().BoolVar(&wait, "wait", false, "Wait for Enter before returning to the terminal panel")
