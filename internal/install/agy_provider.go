@@ -179,16 +179,27 @@ func decodeAgyPlan(raw []byte) (Plan, error) {
 			return Plan{}, fmt.Errorf("agy did not return one successful planning result")
 		}
 		if len(event.Result.Structured) > 0 && string(event.Result.Structured) != "null" {
-			plan, err = Decode(event.Result.Structured)
+			plan, err = decodeAgyStructured(event.Result.Structured)
 		} else {
 			plan, err = decodePlanText(event.Result.Response)
 		}
 		if err != nil {
-			return Plan{}, err
+			return Plan{}, fmt.Errorf("agy returned invalid installation plan: %w", err)
 		}
 	}
 	if count != 1 {
 		return Plan{}, fmt.Errorf("agy returned no planning result")
 	}
 	return plan, nil
+}
+
+// Some agy versions serialize structured_output as a JSON string even when a
+// schema was supplied. Accept both that form and the object form used by
+// newer versions.
+func decodeAgyStructured(raw []byte) (Plan, error) {
+	var text string
+	if err := json.Unmarshal(raw, &text); err == nil {
+		return decodePlanText(text)
+	}
+	return Decode(raw)
 }

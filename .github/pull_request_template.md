@@ -1,12 +1,15 @@
-## Summary
+## Problem and resulting behavior
 
-Describe what changed and why.
+Explain the concrete problem and what users see after this change.
 
 ## Verification
 
-List tests actually run and any manual checks still needed.
+List commands actually run and remaining manual checks. For adapters, distinguish fixture tests from live agent sessions and name the platforms tested.
 
 ## Compatibility and security
 
-Describe configuration compatibility, affected agents, and security impact.
-Do not include credentials, private URLs, or user configuration files.
+Describe changes to configuration/CLI contracts, backups, credential handling and affected agents. Link explicit approval if a breaking change is necessary. Never paste private configs, credentials or raw planner conversations.
+
+## Documentation
+
+Link the relevant guide/changelog update, or explain why none is needed.
