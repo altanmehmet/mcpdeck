@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       # Fixture tests isolate LOCALAPPDATA; keep the normal runner cache path.
       - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           cache: true
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@v4
       # Fixture tests isolate LOCALAPPDATA; keep the normal runner cache path.
       - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           architecture: arm64
