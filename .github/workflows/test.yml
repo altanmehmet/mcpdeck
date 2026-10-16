@@ -22,7 +22,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -43,7 +43,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Fixture tests isolate LOCALAPPDATA; keep the normal runner cache path.
       - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
       - uses: actions/setup-go@v5
@@ -73,7 +73,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Fixture tests isolate LOCALAPPDATA; keep the normal runner cache path.
       - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
       - uses: actions/setup-go@v5
