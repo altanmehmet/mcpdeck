@@ -21,7 +21,7 @@ jobs:
         arch: [arm64, amd64]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           cache: true
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v4
       # Fixture HOME isolation must not recreate the Go cache per test.
       - run: Add-Content $env:GITHUB_ENV "GOCACHE=$env:LOCALAPPDATA/go-build"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           cache: true
