@@ -101,3 +101,7 @@ Antigravity CLI ve IDE, mevcut `antigravity` profilinin
 Kaynaklar: [Headless/model seçimi](https://antigravity.google/docs/cli/headless/),
 [İzinler](https://antigravity.google/docs/permissions),
 [MCP ve context geçişi](https://antigravity.google/docs/cli/gcli-migration).
+
+## Private credentials
+
+Use `mcpdeck install "your MCP request" --vault` to save private values in the OS credential store and distribute only a local runtime reference. Private fields never enter planner chat. See [vault usage and protection boundary](VAULT.md). Keep credentials out of ordinary chat.

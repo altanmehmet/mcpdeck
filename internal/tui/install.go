@@ -25,7 +25,12 @@ func (m Model) startInstallRequest(name, request string) (tea.Model, tea.Cmd) {
 		m.form.message = err.Error()
 		return m, nil
 	}
-	command := exec.Command(exe, "--config", m.store.Path, "install", "--name", name, "--wait", request)
+	args := []string{"--config", m.store.Path, "install", "--name", name, "--wait"}
+	if m.form != nil && m.form.vault {
+		args = append(args, "--vault")
+	}
+	args = append(args, request)
+	command := exec.Command(exe, args...)
 	m.form = nil
 	return m, tea.ExecProcess(command, func(err error) tea.Msg { return installFinishedMsg{err} })
 }

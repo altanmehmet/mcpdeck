@@ -55,5 +55,6 @@ func NewRoot() *cobra.Command {
 	root.AddCommand(removeCommand(getStore))
 	root.AddCommand(discoverCommand(getStore))
 	root.AddCommand(instructionsCommand(getStore))
+	root.AddCommand(vaultCommand(getStore))
 	return root
 }

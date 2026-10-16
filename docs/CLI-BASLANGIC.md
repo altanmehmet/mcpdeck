@@ -23,7 +23,7 @@ koruyarak tüm algılanan destekli ajanlara ekler. Terminal karşılığı:
 
 Panelde **Install MCP** veya **i**, MCP dokümantasyonundan kurulum planı üretir.
 Planı onayladıktan sonra kurulum ve gerçek bağlantı testi yapılır; başarılıysa
-tespit edilen destekli ajanlara dağıtılır. Codex, Claude Code veya Gemini CLI;
+tespit edilen destekli ajanlara dağıtılır. Codex, Claude Code, Gemini CLI, Copilot CLI veya Antigravity CLI (`agy`);
 alternatif olarak OpenAI, Anthropic, Gemini veya OpenAI uyumlu API seçilebilir.
 `mcpdeck install` aynı akışı açar. `mcpdeck planner set --provider claude`
 varsayılanı değiştirir. Ayrıntılar: `AKILLI-KURULUM.md`.
@@ -113,3 +113,7 @@ Ayarlar ~/.config/mcpdeck/deck.json dosyasında kalır. Bridge modu kurulum yolu
 kullanır; binary’yi taşıdıysanız yeniden eşitleyip ajan bağlantılarını yenileyin.
 Kaldırmadan önce yönetilen bağlantıları panelden kapatıp ajanları yenileyin;
 ardından ~/.local/bin/mcpdeck dosyasını kaldırabilirsiniz. Ayarlar ayrıca korunur.
+
+## Özel değerler için OS kasası (alpha.8+)
+
+Yeni MCP formunda `Ctrl+K` ile **OS VAULT** seçeneğini açın veya `mcpdeck install "MCP isteğiniz" --vault` kullanın. Değerleri normal sohbete yazmayın; ayrı maskeli alanda girin. Yerel çalıştırıcı bunları OS kasasından alır, ajan ayarlarında değer yerine çalıştırıcı referansı bulunur. Ayrıntılar: [VAULT.md](VAULT.md).

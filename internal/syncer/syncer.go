@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/altanmehmet/mcpdeck/internal/model"
 	"github.com/altanmehmet/mcpdeck/internal/store"
+	"github.com/altanmehmet/mcpdeck/internal/vault"
 	"os"
 	"path/filepath"
 	"sort"
@@ -78,6 +79,31 @@ func (s Syncer) render(key string, bridge bool, b []byte) ([]byte, error) {
 			cfg, ok := s.Deck.Servers[name]
 			if !ok {
 				return nil, fmt.Errorf("unknown server %s", name)
+			}
+			if cfg.HasVault() {
+				if err = cfg.CheckVaultTransport(); err != nil {
+					return nil, err
+				}
+				for variable := range cfg.Variables {
+					if vault.IsReference(cfg.Variables[variable]) {
+						if err = cfg.CheckVaultInput(variable); err != nil {
+							return nil, err
+						}
+					}
+				}
+				exe := s.Executable
+				if exe == "" {
+					exe, err = os.Executable()
+					if err != nil {
+						return nil, err
+					}
+				}
+				args := []string{"vault", "exec", name}
+				if s.ConfigPath != "" {
+					args = append(args, "--config", s.ConfigPath)
+				}
+				servers[name] = profileServerEntry(model.ServerConfig{Command: exe, Args: args}, p)
+				continue
 			}
 			cfg, err = model.Resolve(cfg)
 			if err != nil {

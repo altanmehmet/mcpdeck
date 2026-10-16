@@ -1,130 +1,108 @@
-# MCPDeck
+<p align="center">
+  <img src="docs/images/mcpdeck-header.svg" alt="MCPDeck — MCP configs and agent instructions. One terminal." width="1000">
+</p>
 
-Manage MCP servers and shared personal instructions across coding agents from one terminal.
+<p align="center">
+  <a href="https://github.com/altanmehmet/mcpdeck/actions/workflows/test.yml"><img src="https://github.com/altanmehmet/mcpdeck/actions/workflows/test.yml/badge.svg?branch=main" alt="Platform tests"></a>
+  <a href="https://github.com/altanmehmet/mcpdeck/actions/workflows/security.yml"><img src="https://github.com/altanmehmet/mcpdeck/actions/workflows/security.yml/badge.svg?branch=main" alt="Security checks"></a>
+  <a href="https://github.com/altanmehmet/homebrew-mcpdeck/releases"><img src="https://img.shields.io/github/v/release/altanmehmet/homebrew-mcpdeck?include_prereleases&amp;label=alpha" alt="Latest alpha release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+</p>
 
-**Open source · MIT · alpha software.** Works on macOS, Linux and Windows.
-MCPDeck runs locally: no hosted dashboard or application database is required.
+<p align="center">
+  <a href="#install">Install</a> · <a href="#first-connection">Quick start</a> · <a href="docs/README.md">Documentation</a> · <a href="docs/COMPATIBILITY.md">Supported agents</a> · <a href="CONTRIBUTING.md">Contribute</a> · <a href="README.tr.md">Türkçe</a>
+</p>
 
-## Why use it?
+MCPDeck is a local Go CLI for managing MCP servers and shared personal instructions across coding agents. Review an installation once, sync its connection to supported agents, and keep your global rules in one place.
 
-If you use several coding agents, their MCP configuration and personal rules can drift.
-MCPDeck provides one terminal panel to discover, install, enable, disable, update and remove
-MCP servers, and distribute shared instructions while preserving existing personal text.
-
-- **Natural-language installation:** enter an MCP name; connection details are optional. A connected
-  planning agent researches a recipe; you review its commands before execution.
-- **Multiple agents:** synchronize supported configuration formats, inspect existing MCPs,
-  and remove externally configured entries with backups and change checks.
-- **Shared instructions:** view existing global files, edit one agent, or distribute one
-  shared text. Project instructions retain their scope.
-- **Recovery:** inspect partial sync failures, retry failed targets, and restore backups.
-- **Terminal controls:** mouse and keyboard navigation, configurable shortcuts, and clipboard support.
-
-## Current CLI release
-
-The binary distribution is **0.1.0-alpha.7**. Homebrew and the Windows bootstrap
-pin the same release with platform-specific checksums. This release includes
-Antigravity CLI (`agy`) planning and a model picker populated from `agy models`.
-Copilot planning, CLI model selection and chat Space key fixes are also included.
-[Release notes and packages](https://github.com/altanmehmet/homebrew-mcpdeck/releases/tag/v0.1.0-alpha.7).
+**Public alpha.** macOS, Linux and Windows. One native CLI; no hosted dashboard, Electron bundle or application database. MCP servers and planning providers can have their own runtimes, account requirements and usage costs.
 
 ## Install
 
-### macOS / Linux with Homebrew
+### macOS and Linux
 
 ```sh
 brew install altanmehmet/mcpdeck/mcpdeck
 mcpdeck
 ```
 
-To update: `brew update` followed by `brew upgrade altanmehmet/mcpdeck/mcpdeck`.
-Packages and the binary formula live in [homebrew-mcpdeck](https://github.com/altanmehmet/homebrew-mcpdeck).
+Update with `brew update` and `brew upgrade altanmehmet/mcpdeck/mcpdeck`.
 
 ### Windows
 
-Open PowerShell or Windows Terminal:
+In PowerShell or Windows Terminal:
 
 ```powershell
 irm https://raw.githubusercontent.com/altanmehmet/homebrew-mcpdeck/main/install.ps1 | iex
 mcpdeck
 ```
 
-The bootstrap downloads a pinned x64/ARM64 ZIP, verifies its checksum, and updates your
-user PATH. No WSL, Go or administrator privileges are needed.
-[Windows installation, removal and test coverage](docs/WINDOWS.md).
+The bootstrap verifies the pinned x64/ARM64 archive checksum and updates your user PATH. No administrator privileges, Go or WSL are needed. Prefer to inspect before running? [Review the bootstrap](https://github.com/altanmehmet/homebrew-mcpdeck/blob/main/install.ps1) or use a [manual ZIP installation](docs/WINDOWS.md).
 
-### From source
+### Other installation options
 
-Requires Go 1.24 or newer:
+[Download signed CLI archives](https://github.com/altanmehmet/homebrew-mcpdeck/releases) for macOS/Linux x64 and ARM64, or Windows x64 and ARM64. [Verify publisher signatures and checksums](docs/RELEASING.md). Source builds use the patched Go toolchain selected in `go.mod`; see [Contributing](CONTRIBUTING.md).
+
+## First connection
+
+1. Run `mcpdeck`, choose **New MCP** (`n`), and enter an MCP name or describe the service.
+2. Choose an installed planner: Codex, Claude Code, Gemini CLI, Copilot CLI or Antigravity CLI (`agy`). Select a model or keep its default. API planning is also available.
+3. Review the documented sources, exact setup commands and target agents.
+4. Enter credentials only in the separate masked fields. Enable **OS VAULT** with `Ctrl+K` in the New MCP form to keep private values out of configuration files (alpha.8+).
+5. Approve the recipe. MCPDeck runs setup, checks MCP initialization and tool discovery, and synchronizes the connection. Reload your agents afterward.
+
+A successful connection check establishes MCP protocol/tool discovery. It does not establish that a database, account or every tool call works. [Installation guide](docs/INSTALL-CONSOLE.md).
+
+<p align="center">
+  <img src="docs/images/install-chat-console.png" alt="Installation conversation with a separate input field, reviewed setup steps, software inventory and target agents" width="1000">
+</p>
+
+*Installation conversation example with demo data. `F2` shows the plan; `Ctrl+S` continues to approval; `Ctrl+C` requests cancellation.*
+
+## What it handles
+
+| Need | MCPDeck behavior |
+| --- | --- |
+| The same MCP in several agents | Discover existing connections, then sync through agent-specific adapters. |
+| An unfamiliar MCP installation | Ask a planner for a sourced recipe; review it before execution. |
+| A broken managed MCP | `mcpdeck repair <name>` proposes an update and verifies it before saving. |
+| Personal rules drifting between agents | Edit global files or distribute a shared section while preserving existing personal text. |
+| Private connection values | `--vault` stores values in the OS credential store and syncs local runtime references (alpha.8+). |
+| A partial configuration update | Inspect status, retry failed targets or restore backups. |
 
 ```sh
-git clone https://github.com/altanmehmet/mcpdeck.git
-cd mcpdeck
-go build -trimpath -o mcpdeck .
-sh scripts/install.sh
-mcpdeck
+mcpdeck planner detected
+mcpdeck install "Install the MCP for my service" --vault
+mcpdeck instructions append 'Never log credentials.'
+mcpdeck instructions files
+mcpdeck sync --retry-failed
+mcpdeck doctor
 ```
 
-## First run
+## Agent support
 
-1. Open `mcpdeck`. It detects known agent configuration locations.
-2. Choose **New MCP** (`n`), enter a name and press Enter. Connection details are optional.
-3. Choose a detected Codex, Claude, Gemini, Copilot or Antigravity (`agy`) planner. Select a CLI model or keep its default. A saved API provider is also available.
-4. Review sources, commands and target agents. Approve with `y` when satisfied.
-5. Enter private connection values only in the hidden input prompts.
-6. MCPDeck installs the recipe, checks MCP initialize/tool discovery, then syncs settings.
-   Start a new agent session to load the configuration; account/tool access needs a real tool call.
+MCP configuration adapters cover Codex, Claude Desktop/Code, Copilot VS Code/CLI, Cursor, Windsurf, Antigravity, Gemini CLI, OpenCode, Zed, Cline, Roo Code, Continue, Amazon Q, Kiro, Qwen Code and TraeCode.
 
-Choose **Instructions** (`g`) to manage shared personal rules. `Ctrl+S` reviews changes;
-press it again to save, distribute and return to the main panel. Back/Esc closes
-the editor and discards unsaved drafts. **Existing** opens current global files;
-**Add one** appends a rule without replacing earlier shared guidance.
+**MCP configuration, installation planning and global instructions are different capabilities.** A configuration adapter does not mean a model session has been tested with every version of that agent. Some global instruction targets require a manual step. See the [compatibility guide](docs/COMPATIBILITY.md) and [instruction paths](docs/INSTRUCTIONS.md).
 
-Interactive installation and repair use a dedicated terminal conversation: a fixed
-input area, scrollable history, a separate plan view, actual setup step states and
-masked private inputs. Press `F2` to inspect exact commands and sources, `Ctrl+S`
-to continue from chat to approval, and `Ctrl+C` to request cancellation. Use
-`--plain` for the original line-based view; scripts and noninteractive approvals
-retain their existing output. [Console controls](docs/INSTALL-CONSOLE.md).
+## Credentials and safety
 
-| Task | Command / key |
-| --- | --- |
-| Open the terminal panel | `mcpdeck` |
-| Add a shared instruction | `mcpdeck instructions append 'Never log credentials.'` |
-| List existing global instruction files | `mcpdeck instructions files` |
-| Repair/update an MCP | `mcpdeck update <name>` |
-| Retry failed synchronization | `mcpdeck sync --retry-failed` |
-| Help / customize shortcuts | `?` / `a` |
+Private installation fields stay out of the planning prompt and chat. With `--vault`, values are saved in macOS Keychain, Windows Credential Manager or Linux Secret Service, then retrieved by the local MCP runtime. Remote vault connections require HTTPS; loopback HTTP remains available for local MCPs. [Vault setup and boundaries](docs/VAULT.md).
 
-## Supported agents and limits
+MCPDeck executes reviewed installation commands with your user permissions. It is **not an OS sandbox**. An unrestricted program running as the same user, an administrator or a compromised MCP may access private data. MCP tool responses can also contain sensitive information. Keep credentials out of ordinary chat, issues and documentation supplied to a planner.
 
-MCP adapters include Codex, Claude Desktop/Code, Copilot VS Code/CLI, Cursor, Windsurf,
-Antigravity, Gemini CLI, OpenCode, Zed, Cline, Roo Code, Continue, Amazon Q, Kiro,
-Qwen Code and TraeCode. Configuration support is broader than live account test coverage.
-Global instruction adapters are a separate feature; some agents show **manual** targets.
-[Instruction locations and limits](docs/INSTRUCTIONS.md).
+Archive publisher signatures are available. macOS packages are not notarized and Windows executables are not Authenticode signed. This is an alpha release, not a production certification. [Security policy](SECURITY.md).
 
-This alpha does **not** guarantee unattended installation of every MCP. Provider login,
-OAuth authorization, missing runtimes, licenses or database compatibility can need action.
-Installation recipes run with your user permissions and are not an operating-system sandbox.
-MCPDeck never treats a handshake as proof of database or account access.
+## Documentation and community
 
-Windows executables are not Authenticode signed; macOS packages are not notarized.
-Archive publisher signatures and SHA-256 checksums are available for manual verification.
-[Security policy](SECURITY.md) · [Package verification](docs/RELEASING.md).
+- [Documentation index](docs/README.md) — setup, instructions, credentials and recovery.
+- [Türkçe başlangıç](README.tr.md) — kurulum ve ilk kullanım.
+- [Changelog](CHANGELOG.md) and [release notes](https://github.com/altanmehmet/mcpdeck/releases).
+- [Support](SUPPORT.md) — questions, bug reports and troubleshooting.
+- [Roadmap](ROADMAP.md) — current scope and work that remains.
+- [Contributing](CONTRIBUTING.md) — development, tests and review policy.
+- [Community guidelines](CODE_OF_CONDUCT.md).
 
-## Documentation and contributing
+Report reproducible bugs in [Issues](https://github.com/altanmehmet/mcpdeck/issues) and ask usage questions in [Discussions](https://github.com/altanmehmet/mcpdeck/discussions). [Report vulnerabilities privately](https://github.com/altanmehmet/mcpdeck/security/advisories/new).
 
-- [Getting started (Turkish)](docs/CLI-BASLANGIC.md)
-- [Installation chat and troubleshooting (Turkish)](docs/AKILLI-KURULUM.md)
-- [Shared instructions and repeatable tests](docs/INSTRUCTIONS.md)
-- [Backup recovery](docs/RECOVERY.md)
-- [Test record and coverage limits](docs/TEST-SONUCLARI.md)
-- [Detailed Turkish reference](docs/REFERENCE-TR.md)
-- [Contributing and branch policy](CONTRIBUTING.md)
-
-Please report reproducible bugs and include your OS, MCPDeck version and agent version.
-Do not post tokens, passwords, private connection values or complete personal configuration.
-Use GitHub private vulnerability reporting for security issues.
-
-Licensed under [MIT](LICENSE). Binary packages also include third-party license notices.
+Released under the [MIT license](LICENSE). Binary archives include third-party license notices.

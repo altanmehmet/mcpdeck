@@ -86,6 +86,16 @@ func TestDecodeAgyPlanningResult(t *testing.T) {
 			t.Fatal("duplicate results accepted")
 		}
 	}
+	stringResult, _ := json.Marshal(map[string]any{
+		"event": "result",
+		"result": map[string]any{
+			"status":            "SUCCESS",
+			"structured_output": string(raw),
+		},
+	})
+	if p, err := decodeAgyPlan(stringResult); err != nil || p.Name != "demo" {
+		t.Fatal(p, err)
+	}
 	for _, status := range []string{"ERROR", "WAITING", "CANCELED"} {
 		event, _ := json.Marshal(map[string]any{"event": "result", "result": map[string]any{"status": status, "response": string(raw)}})
 		if _, err := decodeAgyPlan(event); err == nil {

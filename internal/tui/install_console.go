@@ -568,7 +568,7 @@ func (m InstallConsole) View() string {
 		lines[height-3] = " " + consolePlain(m.choices[m.choice])
 		lines[height-2] = muted.Render(" ↑/↓ choose  ·  Enter select  ·  Click an agent to select")
 	} else if m.secret {
-		lines[height-2] = muted.Render(" Private value · masked · not added to conversation")
+		lines[height-2] = muted.Render(" Private value · local MCP only · never sent to planner/chat")
 	} else {
 		lines[height-2] = muted.Render(" Enter send  ·  Ctrl+S review install  ·  F2 plan  ·  PgUp/PgDn scroll")
 	}

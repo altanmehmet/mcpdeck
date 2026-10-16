@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="196" viewBox="0 0 1000 196" role="img" aria-labelledby="title description">
+  <title id="title">MCPDeck</title><desc id="description">MCP configs and agent instructions. One terminal.</desc>
+  <rect width="1000" height="196" rx="16" fill="#10151d"/>
+  <g transform="translate(58 53)" fill="none" stroke="#61d6e8" stroke-width="3">
+    <rect width="86" height="64" rx="8"/><path d="M0 19h86"/>
+    <path d="m17 34 9 8-9 8m20 0h21" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 76h74m-62 11h62" stroke="#526474" stroke-linecap="round"/>
+  </g>
+  <text x="177" y="99" fill="#f1f5f9" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="49" font-weight="650" letter-spacing="-1">MCPDeck</text>
+  <text x="179" y="137" fill="#a5b4c5" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="21">MCP configs and agent instructions. One terminal.</text>
+  <text x="934" y="48" text-anchor="end" fill="#61d6e8" font-family="ui-monospace,monospace" font-size="13">OPEN SOURCE / CLI</text>
+</svg>
